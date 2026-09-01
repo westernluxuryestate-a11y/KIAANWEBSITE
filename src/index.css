@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* WCAG AA Accessibility Enhancements (Item 135) */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+.high-contrast {
+  filter: contrast(1.25);
+}
+
+.text-scale-large {
+  font-size: 115% !important;
+}
+
+.text-scale-xl {
+  font-size: 130% !important;
+}
+
+/* Touch-friendly target minimums */
+button, a, input, select, textarea {
+  min-height: 38px;
+  touch-action: manipulation;
+}
+

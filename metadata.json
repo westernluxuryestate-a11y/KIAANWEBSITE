@@ -1,0 +1,6 @@
+{
+  "name": "Kiaan Properties",
+  "description": "Production-grade AI-first luxury real estate digital experience platform with MahaRERA compliance, interactive project digital twins, conversational search, and financial intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
