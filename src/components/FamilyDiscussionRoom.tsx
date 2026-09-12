@@ -89,7 +89,7 @@ export const FamilyDiscussionRoom: React.FC<FamilyDiscussionRoomProps> = ({
     if (!newComment.trim()) return;
 
     const note: FamilyNote = {
-      id: `fn-${Date.now()}`,
+      id: `fn-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       authorName: newAuthor,
       authorRole: newRole,
       avatarInitials: newAuthor.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2),

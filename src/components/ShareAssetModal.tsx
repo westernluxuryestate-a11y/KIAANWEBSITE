@@ -47,7 +47,7 @@ export const ShareAssetModal: React.FC<ShareAssetModalProps> = ({
   };
 
   const whatsappMessage = encodeURIComponent(
-    `✨ Explore *${assetTitle}* on Kiaan Estates\n📍 ${location}\n💰 Starting at ${priceDisplay}\n🏛️ 100% MahaRERA Audited with 3D Spatial Digital Twin & Solar Ray Simulator\n\nExperience the asset here: ${directUrl}`
+    `✨ Explore *${assetTitle}* on Kiaan Properties\n📍 ${location}\n💰 Starting at ${priceDisplay}\n🏛️ 100% MahaRERA Audited with 3D Spatial Digital Twin & Solar Ray Simulator\n\nExperience the asset here: ${directUrl}`
   );
 
   const whatsappUrl = `https://api.whatsapp.com/send?text=${whatsappMessage}`;

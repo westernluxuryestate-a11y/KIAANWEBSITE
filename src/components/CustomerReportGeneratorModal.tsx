@@ -23,6 +23,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { CurrencyCode, GeneratedPropertyReport, Project, Property, ReportSectionKey, Unit } from '../types';
+import { KiaanPropertiesLogo } from './KiaanBrandLogo';
 import {
   AVAILABLE_REPORT_SECTIONS,
   generatePropertyReport,
@@ -339,13 +340,8 @@ export const CustomerReportGeneratorModal: React.FC<CustomerReportGeneratorModal
               {/* DOSSIER BRAND HEADER */}
               <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-950/40 via-black to-slate-950 border border-amber-500/40 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-black flex items-center justify-center font-serif font-black text-sm">
-                      K
-                    </div>
-                    <span className="font-serif font-bold text-lg tracking-widest text-amber-400">
-                      KIAAN ESTATES
-                    </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <KiaanPropertiesLogo theme="dark" size="sm" />
                   </div>
                   <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-wide">
                     {generatedReport.targetTitle}

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Building,
   ShieldCheck,
@@ -12,26 +12,36 @@ import {
   Sparkles,
   Layers,
   Search,
-  SlidersHorizontal,
   Bookmark,
   UserCheck,
   ChevronDown,
   FileCheck,
   Compass,
-  Car,
   Home,
   PlusCircle,
-  LogIn,
-  Heart,
   TrendingUp,
   Key,
   Users,
   Globe,
   FileText,
+  FileCode,
   Building2,
+  BookOpen,
+  Menu,
+  X,
+  Lock,
+  DollarSign,
+  Calendar,
+  CreditCard,
+  SlidersHorizontal,
+  MessageSquare,
+  UserPlus,
+  LogOut,
+  Briefcase,
 } from 'lucide-react';
 import { CurrencyCode } from '../types';
 import { CURRENCY_REGISTRY } from '../services/currencyEngine';
+import { KiaanPropertiesLogo } from './KiaanBrandLogo';
 
 interface NavbarProps {
   activeTab: string;
@@ -50,7 +60,14 @@ interface NavbarProps {
   onOpenSellModal?: () => void;
   onOpenLoginModal?: () => void;
   onOpenAdminCms?: () => void;
+  onOpenMyListings?: () => void;
+  onOpenComparisonTray?: () => void;
+  onOpenWhatsAppOnboarding?: (mode?: 'PROPERTY' | 'PROJECT') => void;
+  onOpenProjectSchemaSuite?: () => void;
+  onOpenResidentialWizard?: () => void;
+  onOpenUniversalListingModal?: () => void;
   userSession?: any;
+  onLogout?: () => void;
   savedCount?: number;
 }
 
@@ -71,13 +88,58 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSellModal,
   onOpenLoginModal,
   onOpenAdminCms,
+  onOpenMyListings,
+  onOpenComparisonTray,
+  onOpenWhatsAppOnboarding,
+  onOpenProjectSchemaSuite,
+  onOpenResidentialWizard,
+  onOpenUniversalListingModal,
   userSession,
-  savedCount = 2,
+  onLogout,
+  savedCount = 0,
 }) => {
-  const [showAuditMenu, setShowAuditMenu] = useState(false);
+  const [showSecondaryMenu, setShowSecondaryMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const secondaryMenuRef = useRef<HTMLDivElement>(null);
   const isDark = theme === 'dark';
 
-  const isAuditActive = ['phase01', 'phase02', 'phase03', 'phase04', 'rera'].includes(activeTab);
+  // Dynamic scroll detection for transparent to blurred glassmorphic header transition
+  // Ensures a completely transparent, Apple-inspired aesthetic through the hero section
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroEl = document.getElementById('hero-discovery-section');
+      if (heroEl) {
+        // Measure the distance of hero section bottom relative to viewport
+        const rect = heroEl.getBoundingClientRect();
+        // Toggle glassmorphism when hero bottom passes the navbar height threshold (<= 70px)
+        setIsScrolled(rect.bottom <= 70);
+      } else {
+        // Fallback threshold for subviews or other dashboards without hero-discovery-section
+        setIsScrolled(window.scrollY > 100);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [activeTab]);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   const toggleTheme = () => {
     if (setTheme) {
@@ -85,413 +147,336 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const handleModeSelect = (newMode: 'BUY' | 'RENT_LEASE' | 'INVEST' | 'COMMERCIAL') => {
+  const handleModeSelect = (newMode: 'BUY' | 'RENT_LEASE' | 'INVEST') => {
     setMode(newMode);
-    setActiveTab(newMode === 'COMMERCIAL' ? 'commercial' : 'explore');
+    setActiveTab('explore');
+    setIsMobileMenuOpen(false);
+    setShowSecondaryMenu(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleProjectsSelect = () => {
+    setMode('BUY');
+    setActiveTab('explore');
+    setIsMobileMenuOpen(false);
+    setShowSecondaryMenu(false);
+    setTimeout(() => {
+      const el = document.getElementById('explore-projects-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  const handleSellSelect = () => {
+    setIsMobileMenuOpen(false);
+    setShowSecondaryMenu(false);
+    if (onOpenSellModal) {
+      onOpenSellModal();
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (secondaryMenuRef.current && !secondaryMenuRef.current.contains(e.target as Node)) {
+        setShowSecondaryMenu(false);
+      }
+    };
+    if (showSecondaryMenu) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [showSecondaryMenu]);
 
   return (
     <>
       <header
-        className={`sticky top-0 z-50 backdrop-blur-2xl border-b shadow-2xl transition-all duration-300 ${
-          isDark
-            ? 'bg-[#070B12]/90 border-amber-500/15 text-white'
-            : 'bg-white/90 border-slate-200 text-slate-900 shadow-md'
+        className={`sticky top-0 z-50 transition-all duration-500 ease-out ${
+          isScrolled
+            ? isDark
+              ? 'backdrop-blur-2xl bg-[#070B12]/80 border-b border-white/[0.08] text-white shadow-xl shadow-black/25'
+              : 'backdrop-blur-2xl bg-white/80 border-b border-slate-200/80 text-slate-900 shadow-sm shadow-slate-900/5'
+            : isDark
+            ? 'bg-transparent backdrop-blur-none border-b border-transparent text-white shadow-none'
+            : 'bg-transparent backdrop-blur-none border-b border-transparent text-slate-900 shadow-none'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo & Brand Identity */}
+          <div className="flex items-center justify-between h-16 sm:h-18">
+            {/* 1. Official Kiaan Properties Brand Logo */}
             <div
               id="brand-logo"
-              onClick={() => setActiveTab('explore')}
-              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => {
+                setMode('BUY');
+                setActiveTab('explore');
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center cursor-pointer group select-none shrink-0"
+              title="Kiaan Properties"
             >
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-900 p-[1.5px] shadow-lg shadow-amber-500/25 group-hover:shadow-amber-500/50 transition-all duration-500">
-                <div
-                  className={`w-full h-full rounded-[14px] flex items-center justify-center ${
-                    isDark ? 'bg-[#080D17]' : 'bg-slate-900'
-                  }`}
-                >
-                  <span className="font-serif font-extrabold text-xl bg-gradient-to-b from-amber-200 to-amber-500 bg-clip-text text-transparent">
-                    K
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`font-serif text-xl sm:text-2xl font-bold tracking-widest ${
-                      isDark ? 'text-white' : 'text-slate-950'
-                    }`}
-                  >
-                    KIAAN
-                  </span>
-                  <span className="text-[8px] sm:text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
-                    ESTATES
-                  </span>
-                </div>
-                <p
-                  className={`text-[8.5px] sm:text-[9.5px] tracking-widest uppercase font-medium ${
-                    isDark ? 'text-white/50' : 'text-slate-500'
-                  }`}
-                >
-                  Discovery & Digital Twins
-                </p>
-              </div>
+              <KiaanPropertiesLogo theme={theme} size="md" animated />
             </div>
 
-            {/* Desktop Primary Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1">
-              <button
-                id="nav-home"
-                onClick={() => setActiveTab('explore')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'explore' && mode === 'BUY'
-                    ? 'text-black bg-gradient-to-r from-amber-400 to-amber-500 font-bold shadow-md shadow-amber-500/20'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                Home
-              </button>
-
-              <button
-                id="nav-properties"
-                onClick={() => {
-                  setActiveTab('search');
-                }}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  activeTab === 'search'
-                    ? 'text-black bg-gradient-to-r from-amber-400 to-amber-500 font-bold shadow-md shadow-amber-500/20'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                Properties
-              </button>
-
-              <button
-                id="nav-projects"
-                onClick={() => {
-                  setActiveTab('explore');
-                  const el = document.getElementById('explore-projects-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                Projects
-              </button>
-
-              {/* Modes: Buy | Rent / Lease | Invest */}
+            {/* 2. Desktop Primary Navigation: ONLY 'Buy', 'Rent', 'Projects', and 'Sell' */}
+            <nav
+              className={`hidden md:flex items-center gap-1 px-2 py-1 rounded-full border transition-all duration-500 ${
+                isScrolled
+                  ? isDark
+                    ? 'bg-white/[0.05] border-white/[0.08] backdrop-blur-md'
+                    : 'bg-black/[0.04] border-black/[0.08] backdrop-blur-md'
+                  : isDark
+                  ? 'bg-white/[0.07] border-white/10 backdrop-blur-sm'
+                  : 'bg-black/[0.04] border-black/10 backdrop-blur-sm'
+              }`}
+            >
+              {/* Item 1: Buy */}
               <button
                 id="nav-buy"
                 onClick={() => handleModeSelect('BUY')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  mode === 'BUY' && activeTab === 'explore'
-                    ? 'text-amber-500 bg-amber-500/10 border border-amber-500/30 font-bold'
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
+                  activeTab === 'explore' && mode === 'BUY'
+                    ? isDark
+                      ? 'text-white bg-white/15 font-semibold shadow-sm'
+                      : 'text-slate-950 bg-white font-semibold shadow-sm'
                     : isDark
                     ? 'text-white/70 hover:text-white hover:bg-white/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                 }`}
               >
                 Buy
               </button>
 
+              {/* Item 2: Rent */}
               <button
                 id="nav-rent"
                 onClick={() => handleModeSelect('RENT_LEASE')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  mode === 'RENT_LEASE'
-                    ? 'text-amber-500 bg-amber-500/10 border border-amber-500/30 font-bold'
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
+                  activeTab === 'explore' && mode === 'RENT_LEASE'
+                    ? isDark
+                      ? 'text-white bg-white/15 font-semibold shadow-sm'
+                      : 'text-slate-950 bg-white font-semibold shadow-sm'
                     : isDark
                     ? 'text-white/70 hover:text-white hover:bg-white/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                 }`}
               >
-                Rent / Lease
+                Rent
               </button>
 
+              {/* Item 3: Projects */}
               <button
-                id="nav-invest"
-                onClick={() => handleModeSelect('INVEST')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                  mode === 'INVEST'
-                    ? 'text-amber-500 bg-amber-500/10 border border-amber-500/30 font-bold'
+                id="nav-projects"
+                onClick={handleProjectsSelect}
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
+                  activeTab === 'explore' && mode === 'BUY'
+                    ? isDark
+                      ? 'text-white/70 hover:text-white hover:bg-white/5'
+                      : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                     : isDark
                     ? 'text-white/70 hover:text-white hover:bg-white/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                 }`}
               >
-                Invest
+                Projects
               </button>
 
+              {/* Item 3.5: Developers */}
               <button
-                id="nav-commercial"
-                onClick={() => handleModeSelect('COMMERCIAL')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  mode === 'COMMERCIAL' || activeTab === 'commercial'
-                    ? 'text-amber-500 bg-amber-500/15 border border-amber-500/30 font-bold'
+                id="nav-developers"
+                onClick={() => {
+                  setActiveTab('developers');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
+                  activeTab === 'developers' || activeTab === 'developer-profile'
+                    ? isDark
+                      ? 'text-white bg-white/15 font-semibold shadow-sm'
+                      : 'text-slate-950 bg-white font-semibold shadow-sm'
                     : isDark
                     ? 'text-white/70 hover:text-white hover:bg-white/5'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                 }`}
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-500" />
-                <span>Commercial</span>
+                Developers
               </button>
 
+              {/* Item 3.8: Localities */}
               <button
-                id="nav-docs"
-                onClick={() => onOpenDocCenter && onOpenDocCenter()}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
+                id="nav-localities"
+                onClick={() => {
+                  setActiveTab('localities');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
+                  activeTab === 'localities' || activeTab === 'locality-page'
+                    ? isDark
+                      ? 'text-white bg-white/15 font-semibold shadow-sm'
+                      : 'text-slate-950 bg-white font-semibold shadow-sm'
+                    : isDark
+                    ? 'text-white/70 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
+                }`}
+              >
+                Localities
+              </button>
+
+              {/* Item 4: Sell */}
+              <button
+                id="nav-sell"
+                onClick={handleSellSelect}
+                className={`px-4 py-1.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-200 cursor-pointer ${
                   isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-                title="MahaRERA Sanctions & AI Explainer"
-              >
-                <FileText className="w-3.5 h-3.5 text-amber-500" />
-                <span>Doc Center</span>
-              </button>
-
-              <button
-                id="nav-passport"
-                onClick={() => onOpenPassportModal && onOpenPassportModal()}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-                title="10-Step Journey Passport & Active Flow Recovery"
-              >
-                <Compass className="w-3.5 h-3.5 text-amber-400" />
-                <span>Journey</span>
-              </button>
-
-              <button
-                id="nav-map"
-                onClick={() => setActiveTab('map')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'map'
-                    ? 'text-cyan-400 bg-cyan-500/15 border border-cyan-500/30 font-bold'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
+                    ? 'text-white/70 hover:text-white hover:bg-white/5'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-black/5'
                 }`}
               >
-                <Compass className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Map Explorer</span>
+                Sell
               </button>
-
-              <button
-                id="nav-family"
-                onClick={() => setActiveTab('family')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'family'
-                    ? 'text-purple-400 bg-purple-500/15 border border-purple-500/30 font-bold'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 text-purple-400" />
-                <span>Family Room</span>
-              </button>
-
-              <button
-                id="nav-ai"
-                onClick={() => setActiveTab('ai')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'ai'
-                    ? 'text-amber-500 bg-amber-500/15 border border-amber-500/30 font-bold'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <Bot className="w-3.5 h-3.5 text-amber-500" />
-                <span>Kiaan AI</span>
-              </button>
-
-              <button
-                id="nav-calculators"
-                onClick={() => setActiveTab('finance')}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'finance'
-                    ? 'text-black bg-gradient-to-r from-amber-400 to-amber-500 font-bold shadow-md shadow-amber-500/25'
-                    : isDark
-                    ? 'text-white/80 hover:text-white hover:bg-white/5'
-                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
-                }`}
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span>Calculators</span>
-              </button>
-
-              {/* RERA & Compliance Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowAuditMenu(!showAuditMenu)}
-                  className={`px-2.5 py-2 rounded-xl text-xs font-medium tracking-wide flex items-center gap-1 transition-all cursor-pointer border ${
-                    isAuditActive
-                      ? 'bg-amber-500/20 text-amber-500 border-amber-500/40'
-                      : isDark
-                      ? 'bg-white/[0.03] text-white/60 border-white/10 hover:text-white hover:bg-white/5'
-                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:text-slate-900'
-                  }`}
-                  title="MahaRERA Regulatory & Verification Suite"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>MahaRERA</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </button>
-
-                {showAuditMenu && (
-                  <div
-                    className={`absolute right-0 mt-2 w-60 rounded-2xl border p-2 shadow-2xl backdrop-blur-2xl z-50 animate-fade-in space-y-1 ${
-                      isDark
-                        ? 'bg-[#0C121E]/95 border-amber-500/30 text-white'
-                        : 'bg-white/95 border-slate-200 text-slate-900 shadow-xl'
-                    }`}
-                    onMouseLeave={() => setShowAuditMenu(false)}
-                  >
-                    <button
-                      onClick={() => {
-                        setActiveTab('rera');
-                        setShowAuditMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10"
-                    >
-                      <span>MahaRERA Compliance Center</span>
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setActiveTab('contracts');
-                        setShowAuditMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10"
-                    >
-                      <span>Escrow & Digital Contracts</span>
-                      <FileCheck className="w-3.5 h-3.5 text-amber-500" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (onOpenPrivacyCenter) onOpenPrivacyCenter();
-                        setShowAuditMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 text-amber-400"
-                    >
-                      <span>DPDPA Privacy & Consent</span>
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (onOpenPaymentSecurity) onOpenPaymentSecurity();
-                        setShowAuditMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 text-emerald-400"
-                    >
-                      <span>Payment Security Ledger</span>
-                      <FileText className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (onOpenSeoInspector) onOpenSeoInspector();
-                        setShowAuditMenu(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 text-cyan-400"
-                    >
-                      <span>SEO & Schema.org Inspector</span>
-                      <FileCode className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="border-t border-current/10 pt-1 text-[10px] text-amber-500 font-bold px-3">
-                      Verification Audits
-                    </div>
-                    {(['phase04', 'phase03', 'phase02', 'phase01'] as const).map((ph) => (
-                      <button
-                        key={ph}
-                        onClick={() => {
-                          setActiveTab(ph);
-                          setShowAuditMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-1.5 rounded-lg text-[11px] flex items-center justify-between opacity-80 hover:opacity-100 hover:bg-current/5"
-                      >
-                        <span className="capitalize">{ph.replace('phase', 'Phase ')} Audit</span>
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-500 font-mono">PASS</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </nav>
 
-            {/* Actions: Sell/List Property + Currency + Theme + VIP Login */}
-            <div className="flex items-center gap-2">
-              {/* NRI & Multi-Currency Engine Selector (Item 106 & 107) */}
+            {/* 3. Mobile Header Right Actions: Strictly Limited to Search + Hamburger */}
+            <div className="flex md:hidden items-center gap-1">
               <button
-                id="nav-currency-nri"
-                onClick={() => onOpenNriModal && onOpenNriModal()}
-                className={`px-2.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  currency !== 'INR'
-                    ? 'bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/25'
+                id="mobile-header-search-btn"
+                onClick={() => {
+                  setActiveTab('search');
+                  setIsMobileMenuOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-2.5 rounded-full transition-all duration-200 cursor-pointer ${
+                  activeTab === 'search'
+                    ? 'text-amber-400 bg-amber-500/15'
                     : isDark
-                    ? 'border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white'
-                    : 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200'
+                    ? 'text-white/80 hover:text-white hover:bg-white/10'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100'
                 }`}
-                title="NRI Mode & Multi-Currency Engine"
+                title="Search Residences"
+                aria-label="Search"
               >
-                <Globe className="w-3.5 h-3.5 text-amber-400" />
-                <span>{currency} ({CURRENCY_REGISTRY[currency]?.symbol || '₹'})</span>
+                <Search className="w-5 h-5" />
               </button>
 
-              {/* Sell / List Property Button */}
               <button
-                id="nav-sell-property"
-                onClick={() => onOpenSellModal && onOpenSellModal()}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-bold transition-all cursor-pointer"
+                id="mobile-header-menu-btn"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`p-2.5 rounded-full transition-all duration-200 cursor-pointer ${
+                  isMobileMenuOpen
+                    ? 'text-amber-400 bg-amber-500/20'
+                    : isDark
+                    ? 'text-white/85 hover:text-white hover:bg-white/10'
+                    : 'text-slate-800 hover:text-slate-950 hover:bg-slate-100'
+                }`}
+                title="Navigation Menu"
+                aria-label={isMobileMenuOpen ? 'Close Menu' : 'Open Menu'}
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Sell / List</span>
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {/* 4. Desktop Right-Hand Utility Section: Search, Saved, Login/Account, Menu */}
+            <div className="hidden md:flex items-center gap-2 sm:gap-2.5">
+              {/* Utility 1: Search */}
+              <button
+                id="nav-search-btn"
+                onClick={() => {
+                  setActiveTab('search');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                  activeTab === 'search'
+                    ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30'
+                    : isDark
+                    ? 'text-white/75 hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
+                }`}
+                title="Search Residences & Projects"
+                aria-label="Search"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden lg:inline text-xs">Search</span>
               </button>
 
-              {/* Theme Toggle Button */}
+              {/* Utility 2: Saved Shortlist */}
               <button
-                onClick={toggleTheme}
-                className={`p-2 sm:px-2.5 sm:py-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                id="nav-saved-btn"
+                onClick={() => {
+                  setActiveTab('vip');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-2 sm:px-2.5 sm:py-1.5 rounded-full text-[13px] font-medium flex items-center gap-1.5 relative transition-all duration-200 cursor-pointer ${
+                  activeTab === 'vip' && !userSession
+                    ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30'
+                    : isDark
+                    ? 'text-white/75 hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100'
+                }`}
+                title="Saved Residences & Shortlist"
+                aria-label="Saved"
+              >
+                <Bookmark className="w-4 h-4" />
+                {savedCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-amber-400 text-black text-[9px] font-bold flex items-center justify-center -ml-0.5">
+                    {savedCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Utility 3.5: Master Project Schema & Wizard */}
+              <button
+                id="nav-project-schema-btn"
+                onClick={() => {
+                  if (onOpenProjectSchemaSuite) onOpenProjectSchemaSuite();
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 ${
                   isDark
-                    ? 'border-white/10 bg-white/5 text-amber-400 hover:bg-white/10'
-                    : 'border-slate-200 bg-slate-100 text-slate-800 hover:bg-slate-200'
+                    ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30'
+                    : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-sm'
                 }`}
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                title="Master 29-Section Schema Suite (LQS Audit, Cost Engine, Field Definitions)"
               >
-                <span className="text-xs font-bold flex items-center gap-1">
-                  <span>{isDark ? '☀️' : '🌙'}</span>
-                  <span className="hidden xl:inline text-[11px]">{isDark ? 'Light' : 'Dark'}</span>
-                </span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden xl:inline">Project Schema Suite</span>
+                <span className="xl:hidden">Schema</span>
               </button>
 
-              {/* Admin Console Quick Launch (if admin session active) */}
+              {/* Utility 4: Manage Listings & Portfolio */}
+              <button
+                id="nav-manage-listings-btn"
+                onClick={() => {
+                  if (onOpenMyListings) onOpenMyListings();
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 ${
+                  isDark
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40'
+                    : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-sm'
+                }`}
+                title="Add, Modify, and Delete Properties & Projects"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">My Listings</span>
+              </button>
+
+              {/* Utility 5: Admin CMS Direct Link */}
               {userSession && userSession.role !== 'CUSTOMER' && (
                 <button
-                  id="admin-cms-btn"
-                  onClick={() => onOpenAdminCms && onOpenAdminCms()}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md shadow-red-600/25 transition-all cursor-pointer animate-pulse"
+                  id="nav-admin-cms-direct-btn"
+                  onClick={() => {
+                    if (onOpenAdminCms) onOpenAdminCms();
+                  }}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-600 hover:bg-red-500 text-white flex items-center gap-1.5 cursor-pointer shadow-md shadow-red-900/30 transition-all hover:scale-105"
+                  title="Open Enterprise Super Admin CMS Console"
                 >
-                  <Key className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">CMS Console</span>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Admin CMS</span>
                 </button>
               )}
 
-              {/* Login / VIP Passport / Admin Switcher Button */}
               <button
                 id="account-btn"
                 onClick={() => {
@@ -501,96 +486,1025 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setActiveTab('vip');
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer ${
                   userSession
-                    ? userSession.role !== 'CUSTOMER'
-                      ? 'bg-red-500/20 border border-red-500 text-red-400'
-                      : 'bg-emerald-500/20 border border-emerald-500 text-emerald-400'
-                    : 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-amber-500/20 hover:brightness-105'
+                    ? userSession.role !== 'CUSTOMER' && userSession.role !== 'VISITOR'
+                      ? 'bg-red-500/20 border border-red-500 text-red-300'
+                      : userSession.role === 'VISITOR'
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                      : 'bg-emerald-500/20 border border-emerald-500 text-emerald-300'
+                    : isDark
+                    ? 'bg-white/10 hover:bg-white/20 text-white border border-white/15 backdrop-blur-md'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white shadow-sm'
                 }`}
+                title={userSession ? `Signed in as ${userSession.name} (${userSession.email || userSession.phone})` : 'Visitor Sign In / Create Account'}
               >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>{userSession ? userSession.name.split(' ')[0] : 'Login / Auth'}</span>
+                {userSession ? (
+                  <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                ) : (
+                  <UserPlus className="w-3.5 h-3.5 text-amber-400" />
+                )}
+                <span className="hidden xs:inline">
+                  {userSession
+                    ? userSession.email === 'sales@kiaanproperties.in'
+                      ? '👑 Sales Admin'
+                      : userSession.role === 'VISITOR'
+                      ? `✨ ${userSession.name.split(' ')[0]}`
+                      : `🌟 ${userSession.name.split(' ')[0]}`
+                    : 'Sign In / Register'}
+                </span>
               </button>
+
+              {/* Progressive Disclosure: Secondary Menu Dropdown */}
+              <div className="relative" ref={secondaryMenuRef}>
+                <button
+                  id="nav-secondary-menu-btn"
+                  onClick={() => setShowSecondaryMenu(!showSecondaryMenu)}
+                  className={`p-2 rounded-full border flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                    showSecondaryMenu
+                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
+                      : isDark
+                      ? 'border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10'
+                      : 'border-slate-200 bg-slate-100 text-slate-700 hover:text-slate-950 hover:bg-slate-200'
+                  }`}
+                  title="More Services & Capabilities"
+                  aria-label="More Services Menu"
+                >
+                  <Menu className="w-4 h-4" />
+                </button>
+
+                {/* Secondary Menu Dropdown Drawer */}
+                {showSecondaryMenu && (
+                  <div
+                    className={`absolute right-0 mt-3 w-80 sm:w-96 rounded-3xl border p-4 shadow-2xl backdrop-blur-2xl z-50 animate-fade-in space-y-4 max-h-[85vh] overflow-y-auto ${
+                      isDark
+                        ? 'bg-[#080D18]/98 border-amber-500/30 text-white shadow-black/80'
+                        : 'bg-white/98 border-slate-200 text-slate-900 shadow-2xl'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-current/10">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span className="text-xs font-serif font-bold uppercase tracking-wider text-amber-500">
+                          Kiaan Client Services
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowSecondaryMenu(false)}
+                        className="p-1 rounded-lg hover:bg-current/10 cursor-pointer opacity-60 hover:opacity-100"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Section A: Buyer & Decision Tools */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/80 px-2.5 pb-1">
+                        Buyer & Decision Tools
+                      </p>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('finance');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Calculator className="w-4 h-4 text-amber-500" />
+                          <div>
+                            <span className="font-semibold block">Calculators & Tax Shield</span>
+                            <span className="text-[10px] opacity-60">EMI, Stamp Duty & Wealth Projections</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenComparisonTray) onOpenComparisonTray();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Layers className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Compare Residences</span>
+                            <span className="text-[10px] opacity-60">Side-by-side unit & floor plan matrix</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('family');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Users className="w-4 h-4 text-purple-400" />
+                          <div>
+                            <span className="font-semibold block">Family Decision Room™</span>
+                            <span className="text-[10px] opacity-60">Collaborative voting & private discussion</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenProjectSchemaSuite) onOpenProjectSchemaSuite();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between bg-gradient-to-r from-amber-500/15 to-transparent hover:bg-amber-500/25 text-amber-300 transition-colors cursor-pointer border border-amber-500/30"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block flex items-center gap-1.5">
+                              <span>Project Schema Suite & Wizard</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-black font-mono font-bold">29 SECTIONS</span>
+                            </span>
+                            <span className="text-[10px] opacity-75">LQS audit, unbundled cost sheet, commute matrix</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenMyListings) onOpenMyListings();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 transition-colors cursor-pointer border border-amber-500/20"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <SlidersHorizontal className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Manage Portfolio & Added Listings</span>
+                            <span className="text-[10px] opacity-75">Add, edit, or delete your properties & projects</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenUniversalListingModal) onOpenUniversalListingModal();
+                          else if (onOpenSellModal) onOpenSellModal();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between bg-gradient-to-r from-amber-500/20 via-emerald-500/10 to-transparent hover:from-amber-500/30 text-amber-300 transition-colors cursor-pointer border border-amber-500/30"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block flex items-center gap-1.5">
+                              <span>Universal Listing Suite</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-black font-mono font-bold">ALL TYPES</span>
+                            </span>
+                            <span className="text-[10px] opacity-75">Residential, Commercial, Land, Pre-Lease & Industrial</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenSellModal) onOpenSellModal();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <PlusCircle className="w-4 h-4 text-emerald-400" />
+                          <div>
+                            <span className="font-semibold block">Sell / List Property</span>
+                            <span className="text-[10px] opacity-60">Private client property onboarding</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenWhatsAppOnboarding) onOpenWhatsAppOnboarding('PROPERTY');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors cursor-pointer border border-emerald-500/20"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <MessageSquare className="w-4 h-4 text-emerald-400" />
+                          <div>
+                            <span className="font-semibold block">+ Add via WhatsApp</span>
+                            <span className="text-[10px] opacity-75">Property & Project conversational onboarding</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('contracts');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <FileCheck className="w-4 h-4 text-amber-500" />
+                          <div>
+                            <span className="font-semibold block">Offers, Booking & Contracts</span>
+                            <span className="text-[10px] opacity-60">Digital escrow & tokenized agreements</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+                    </div>
+
+                    {/* Section B: Spatial Discovery & Regulatory Suite */}
+                    <div className="space-y-1 pt-2 border-t border-current/10">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400/80 px-2.5 pb-1">
+                        Advisory & Regulatory Suite
+                      </p>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('developers');
+                          setShowSecondaryMenu(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Building className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Real Estate Developers</span>
+                            <span className="text-[10px] opacity-60">Directory, track records & verified RERA</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        id="dropdown-localities"
+                        onClick={() => {
+                          setActiveTab('localities');
+                          setShowSecondaryMenu(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Compass className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Localities & Micro-Markets</span>
+                            <span className="text-[10px] opacity-60">Intelligence, price trends & opportunities</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('map');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Compass className="w-4 h-4 text-cyan-400" />
+                          <div>
+                            <span className="font-semibold block">Locations & GIS Map</span>
+                            <span className="text-[10px] opacity-60">Micro-market spatial intelligence</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('rera');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                          <div>
+                            <span className="font-semibold block">MahaRERA Compliance Suite</span>
+                            <span className="text-[10px] opacity-60">Reg. No: <strong className="text-amber-400">A031262603640</strong> • Escrow verification</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenDocCenter) onOpenDocCenter();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <FileText className="w-4 h-4 text-amber-500" />
+                          <div>
+                            <span className="font-semibold block">Legal Doc Center</span>
+                            <span className="text-[10px] opacity-60">Title deeds, sanctions & AI explainer</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setMode('COMMERCIAL');
+                          setActiveTab('commercial');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Building2 className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Commercial & Office Assets</span>
+                            <span className="text-[10px] opacity-60">Grade-A IT parks & high-street retail</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenNriModal) onOpenNriModal();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Globe className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">NRI Global Desk & Currency</span>
+                            <span className="text-[10px] opacity-60">{currency} ({CURRENCY_REGISTRY[currency]?.symbol || '₹'}) • FEMA repatriation</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (onOpenPassportModal) onOpenPassportModal();
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Compass className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Client Journey Passport</span>
+                            <span className="text-[10px] opacity-60">10-step progress & flow recovery</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('blog');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer bg-amber-500/5 border border-amber-500/20 text-amber-400"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <BookOpen className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block">Kiaan Journal & Blog</span>
+                            <span className="text-[10px] opacity-75">Market intelligence, FEMA & tax guides</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setActiveTab('careers');
+                          setShowSecondaryMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between hover:bg-current/10 transition-colors cursor-pointer bg-gradient-to-r from-red-500/10 via-amber-500/10 to-transparent border border-amber-500/20 text-current"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Briefcase className="w-4 h-4 text-amber-400" />
+                          <div>
+                            <span className="font-semibold block flex items-center gap-1.5">
+                              <span>Careers & Talent Hub</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] bg-red-600 text-white font-mono font-bold">WE'RE HIRING</span>
+                            </span>
+                            <span className="text-[10px] opacity-75">Sales, Legal, 3D Architecture & Tech Openings</span>
+                          </div>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                      </button>
+                    </div>
+
+                    {/* Section C: Preferences & Administration */}
+                    <div className="space-y-2 pt-2 border-t border-current/10">
+                      <div className="flex items-center justify-between px-2 text-xs">
+                        <span className="opacity-75 text-[11px]">Display Theme</span>
+                        <button
+                          onClick={toggleTheme}
+                          className="px-3 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 hover:bg-current/10 cursor-pointer"
+                        >
+                          <span>{isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        <button
+                          onClick={() => {
+                            if (onOpenPrivacyCenter) onOpenPrivacyCenter();
+                            setShowSecondaryMenu(false);
+                          }}
+                          className="px-2 py-1.5 rounded-lg border border-current/10 text-[10px] font-semibold text-center hover:bg-current/10 cursor-pointer"
+                        >
+                          DPDPA Privacy
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onOpenPaymentSecurity) onOpenPaymentSecurity();
+                            setShowSecondaryMenu(false);
+                          }}
+                          className="px-2 py-1.5 rounded-lg border border-current/10 text-[10px] font-semibold text-center hover:bg-current/10 cursor-pointer"
+                        >
+                          Payment Security
+                        </button>
+                      </div>
+
+                      {/* Visitor & VIP Account Management Card in Secondary Menu */}
+                      <div className="p-2.5 rounded-xl border border-current/10 bg-current/5 space-y-2">
+                        {userSession ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xs">
+                                  {userSession.name?.charAt(0) || 'U'}
+                                </div>
+                                <div className="truncate">
+                                  <div className="text-xs font-bold truncate">{userSession.name}</div>
+                                  <div className="text-[10px] opacity-60 truncate font-mono">{userSession.email || userSession.phone}</div>
+                                </div>
+                              </div>
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                userSession.role !== 'CUSTOMER' && userSession.role !== 'VISITOR'
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : userSession.role === 'VISITOR'
+                                  ? 'bg-amber-500/20 text-amber-300'
+                                  : 'bg-emerald-500/20 text-emerald-300'
+                              }`}>
+                                {userSession.role === 'VISITOR' ? 'VISITOR' : userSession.role === 'CUSTOMER' ? 'VIP CLIENT' : 'ADMIN'}
+                              </span>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => {
+                                  if (onOpenLoginModal) onOpenLoginModal();
+                                  setShowSecondaryMenu(false);
+                                }}
+                                className="flex-1 py-1 rounded-lg border border-current/10 text-[10px] font-bold text-center hover:bg-current/10 cursor-pointer"
+                              >
+                                Switch Account
+                              </button>
+                              {onLogout && (
+                                <button
+                                  onClick={() => {
+                                    onLogout();
+                                    setShowSecondaryMenu(false);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                >
+                                  <LogOut className="w-3 h-3" />
+                                  <span>Sign Out</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>Visitor & Client Portal</span>
+                            </div>
+                            <p className="text-[10px] opacity-70 leading-relaxed">
+                              Create a visitor login for 1-click shortlist sync, AI recommendations & priority visits.
+                            </p>
+                            <button
+                              onClick={() => {
+                                if (onOpenLoginModal) onOpenLoginModal();
+                                setShowSecondaryMenu(false);
+                              }}
+                              className="w-full py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              <span>Visitor Sign In / Register</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Admin Quick Launch if logged in */}
+                      {userSession && userSession.role !== 'CUSTOMER' && userSession.role !== 'VISITOR' && (
+                        <button
+                          id="secondary-admin-btn"
+                          onClick={() => {
+                            if (onOpenAdminCms) onOpenAdminCms();
+                            setShowSecondaryMenu(false);
+                          }}
+                          className="w-full mt-2 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          <span>Enterprise CMS Console</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation (Home, Search, Saved, AI, Account) */}
-      <nav
-        aria-label="Mobile Navigation"
-        className={`lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t backdrop-blur-2xl px-4 py-2 flex items-center justify-around shadow-2xl transition-all duration-300 ${
-          isDark
-            ? 'bg-[#080D18]/95 border-amber-500/20 text-white'
-            : 'bg-white/95 border-slate-200 text-slate-900 shadow-lg'
-        }`}
-      >
-        <button
-          id="mobile-nav-home"
-          onClick={() => setActiveTab('explore')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'explore' ? 'text-amber-500 font-bold' : 'opacity-60 hover:opacity-100'
+      {/* 5. Mobile Fullscreen / High-Contrast Navigation Overlay Drawer */}
+      {isMobileMenuOpen && (
+        <div
+          id="mobile-nav-drawer"
+          className={`md:hidden fixed inset-0 z-50 overflow-y-auto backdrop-blur-2xl transition-all duration-300 ${
+            isDark
+              ? 'bg-[#060A13]/98 text-white'
+              : 'bg-white/98 text-slate-900'
           }`}
         >
-          <Home className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Home</span>
-        </button>
+          {/* Mobile Drawer Top Bar */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.08] dark:border-white/[0.08] border-slate-200">
+            <div
+              onClick={() => {
+                setMode('BUY');
+                setActiveTab('explore');
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="cursor-pointer"
+            >
+              <KiaanPropertiesLogo theme={theme} size="sm" />
+            </div>
 
-        <button
-          id="mobile-nav-search"
-          onClick={() => setActiveTab('search')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'search' ? 'text-amber-500 font-bold' : 'opacity-60 hover:opacity-100'
-          }`}
-        >
-          <Search className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Search</span>
-        </button>
-
-        <button
-          id="mobile-nav-saved"
-          onClick={() => setActiveTab('vip')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl relative transition-all ${
-            activeTab === 'vip' ? 'text-amber-500 font-bold' : 'opacity-60 hover:opacity-100'
-          }`}
-        >
-          <Bookmark className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Saved</span>
-          {savedCount > 0 && (
-            <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center">
-              {savedCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          id="mobile-nav-ai"
-          onClick={() => setActiveTab('ai')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'ai' ? 'text-amber-500 font-bold' : 'opacity-60 hover:opacity-100'
-          }`}
-        >
-          <div className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-500 flex items-center justify-center border border-amber-500/40">
-            <Bot className="w-4 h-4" />
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2.5 rounded-full bg-white/10 dark:bg-white/10 bg-slate-100 hover:bg-white/20 transition-all cursor-pointer"
+              aria-label="Close navigation"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <span className="text-[10px] font-bold text-amber-500 tracking-tight">AI</span>
-        </button>
 
-        <button
-          id="mobile-nav-account"
-          onClick={() => {
-            if (onOpenLoginModal) onOpenLoginModal();
-            else setActiveTab('vip');
-          }}
-          className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all ${
-            activeTab === 'vip' ? 'text-amber-500 font-bold' : 'opacity-60 hover:opacity-100'
-          }`}
-        >
-          <UserCheck className="w-5 h-5" />
-          <span className="text-[10px] tracking-tight">Account</span>
-        </button>
-      </nav>
+          <div className="px-6 py-6 space-y-7 max-w-lg mx-auto">
+            {/* Signature Kiaan AI Featured Interaction */}
+            <div
+              id="mobile-signature-kiaan-ai"
+              onClick={() => {
+                setActiveTab('ai');
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="relative rounded-3xl p-[1px] bg-gradient-to-r from-amber-400 via-amber-300 to-amber-600 shadow-xl shadow-amber-500/10 cursor-pointer group"
+            >
+              <div
+                className={`rounded-[23px] p-4.5 flex items-center justify-between ${
+                  isDark ? 'bg-[#0B101E]' : 'bg-amber-50/90'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-black flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform duration-300">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif font-bold text-sm tracking-wide text-amber-400 dark:text-amber-400 text-amber-900">
+                        Kiaan AI Concierge
+                      </span>
+                      <span className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        Signature
+                      </span>
+                    </div>
+                    <p className="text-[11px] opacity-75 mt-0.5">
+                      Private AI consultation, valuations & bespoke matching
+                    </p>
+                  </div>
+                </div>
+                <ChevronDown className="w-4 h-4 -rotate-90 text-amber-400 shrink-0 ml-2" />
+              </div>
+            </div>
+
+            {/* Core Navigation Links: Buy, Rent, Projects, Sell */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400/80 px-1">
+                Residences & Portfolios
+              </p>
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                {/* Buy */}
+                <button
+                  id="mobile-drawer-buy"
+                  onClick={() => handleModeSelect('BUY')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activeTab === 'explore' && mode === 'BUY'
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold shadow-sm'
+                      : isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Buy</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Ultra-luxury estates & penthouses</span>
+                </button>
+
+                {/* Rent */}
+                <button
+                  id="mobile-drawer-rent"
+                  onClick={() => handleModeSelect('RENT_LEASE')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activeTab === 'explore' && mode === 'RENT_LEASE'
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold shadow-sm'
+                      : isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Rent</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Prime furnished residences</span>
+                </button>
+
+                {/* Projects */}
+                <button
+                  id="mobile-drawer-projects"
+                  onClick={handleProjectsSelect}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Projects</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Signature master developments</span>
+                </button>
+
+                {/* Developers */}
+                <button
+                  id="mobile-drawer-developers"
+                  onClick={() => {
+                    setActiveTab('developers');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activeTab === 'developers' || activeTab === 'developer-profile'
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold shadow-sm'
+                      : isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Developers</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Builder directory & track records</span>
+                </button>
+
+                {/* Localities */}
+                <button
+                  id="mobile-drawer-localities"
+                  onClick={() => {
+                    setActiveTab('localities');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    activeTab === 'localities' || activeTab === 'locality-page'
+                      ? 'bg-amber-500/15 border-amber-500 text-amber-400 font-bold shadow-sm'
+                      : isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Localities</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Micro-market intelligence & discovery</span>
+                </button>
+
+                {/* Sell */}
+                <button
+                  id="mobile-drawer-sell"
+                  onClick={handleSellSelect}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    isDark
+                      ? 'bg-white/[0.03] border-white/10 text-white/90 hover:bg-white/10'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-serif text-lg font-bold block">Sell</span>
+                  <span className="text-[10px] opacity-60 block mt-0.5">Private client asset onboarding</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Client Utility & Advisory Suite */}
+            <div className="space-y-2 border-t border-white/[0.08] dark:border-white/[0.08] border-slate-200 pt-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400/80 px-1">
+                Client Tools & Advisory
+              </p>
+
+              <div className="space-y-1">
+                {/* Saved Residences */}
+                <button
+                  onClick={() => {
+                    setActiveTab('vip');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm font-medium">Saved Residences & Shortlist</span>
+                  </div>
+                  {savedCount > 0 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-black text-[10px] font-bold">
+                      {savedCount} Saved
+                    </span>
+                  ) : (
+                    <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                  )}
+                </button>
+
+                {/* Visitor & VIP Sign In / Account */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      if (onOpenLoginModal) {
+                        onOpenLoginModal();
+                      } else {
+                        setActiveTab('vip');
+                      }
+                    }}
+                    className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      {userSession ? (
+                        <UserCheck className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <UserPlus className="w-4 h-4 text-amber-400" />
+                      )}
+                      <div>
+                        <span className="text-sm font-medium block">
+                          {userSession
+                            ? `${userSession.name} (${userSession.role === 'VISITOR' ? 'Visitor' : userSession.role === 'CUSTOMER' ? 'VIP Client' : 'Admin'})`
+                            : 'Visitor Sign In / Create Account'}
+                        </span>
+                        <span className="text-[10px] opacity-60">
+                          {userSession ? 'Tap to switch profile or re-authenticate' : 'Instant visitor registration, OTP login & 3D access'}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                  </button>
+                  {userSession && onLogout && (
+                    <div className="px-3.5 pb-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          onLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="text-[11px] font-bold text-red-400 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <LogOut className="w-3 h-3" />
+                        <span>Sign Out of {userSession.name.split(' ')[0]}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Calculators */}
+                <button
+                  onClick={() => {
+                    setActiveTab('finance');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Calculator className="w-4 h-4 text-amber-500" />
+                    <div>
+                      <span className="text-sm font-medium block">Calculators & Tax Shield</span>
+                      <span className="text-[10px] opacity-60">EMI, Stamp Duty & Wealth Projections</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Compare */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onOpenComparisonTray) onOpenComparisonTray();
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-medium block">Compare Residences</span>
+                      <span className="text-[10px] opacity-60">Side-by-side unit & floor plan matrix</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Family Room */}
+                <button
+                  onClick={() => {
+                    setActiveTab('family');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className="w-4 h-4 text-purple-400" />
+                    <div>
+                      <span className="text-sm font-medium block">Family Decision Room™</span>
+                      <span className="text-[10px] opacity-60">Collaborative voting & private discussion</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* MahaRERA Compliance */}
+                <button
+                  onClick={() => {
+                    setActiveTab('rera');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <span className="text-sm font-medium block">MahaRERA Compliance Suite</span>
+                      <span className="text-[10px] opacity-60">Reg. No: <strong className="text-amber-400">A031262603640</strong> • Escrow & Title Audits</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Project Schema Suite & Wizard */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onOpenProjectSchemaSuite) onOpenProjectSchemaSuite();
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between bg-gradient-to-r from-amber-500/15 to-transparent border border-amber-500/30 text-amber-300 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-semibold flex items-center gap-1.5">
+                        <span>Project Schema Suite & Wizard</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500 text-black font-mono font-bold">29 SECTIONS</span>
+                      </span>
+                      <span className="text-[10px] opacity-75">Listing Quality Score, Cost Engine & Custom Fields</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                </button>
+
+                {/* WhatsApp Onboarding */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onOpenWhatsAppOnboarding) {
+                      onOpenWhatsAppOnboarding('PROPERTY');
+                    } else {
+                      window.open('https://wa.me/917796655556?text=Hi%20Kiaan%2C%20I%20want%20to%20add%20a%20property%20or%20project.', '_blank');
+                    }
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors cursor-pointer border border-emerald-500/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-4 h-4 text-emerald-400" />
+                    <div>
+                      <span className="text-sm font-medium block">+ Add via WhatsApp</span>
+                      <span className="text-[10px] opacity-80">Property & Project assisted onboarding</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Legal Doc Center */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onOpenDocCenter) onOpenDocCenter();
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-medium block">Legal Document Center</span>
+                      <span className="text-[10px] opacity-60">Title deeds, sanctions & AI explainer</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Kiaan Journal & Blog */}
+                <button
+                  onClick={() => {
+                    setActiveTab('blog');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer bg-amber-500/10 border border-amber-500/20 text-amber-400"
+                >
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-medium block">Kiaan Journal & Market Blog</span>
+                      <span className="text-[10px] opacity-75">Research reports, FEMA guides & tax insights</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* Careers & Talent Hub */}
+                <button
+                  onClick={() => {
+                    setActiveTab('careers');
+                    setIsMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between bg-gradient-to-r from-red-500/15 via-amber-500/10 to-transparent border border-amber-500/25 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-semibold flex items-center gap-1.5">
+                        <span>Careers & Talent Hub</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] bg-red-600 text-white font-mono font-bold">WE'RE HIRING</span>
+                      </span>
+                      <span className="text-[10px] opacity-75">Luxury Real Estate & Spatial Tech Openings</span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+
+                {/* NRI Global Desk & Currency */}
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (onOpenNriModal) onOpenNriModal();
+                  }}
+                  className="w-full text-left px-3.5 py-3 rounded-2xl flex items-center justify-between hover:bg-white/5 dark:hover:bg-white/5 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-4 h-4 text-amber-400" />
+                    <div>
+                      <span className="text-sm font-medium block">NRI Global Desk & Currency</span>
+                      <span className="text-[10px] opacity-60">
+                        {currency} ({CURRENCY_REGISTRY[currency]?.symbol || '₹'}) • FEMA repatriation
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 -rotate-90 opacity-40" />
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Footer & Theme Switcher */}
+            <div className="pt-4 border-t border-white/[0.08] dark:border-white/[0.08] border-slate-200 flex items-center justify-between pb-8">
+              <span className="text-xs opacity-60">Display Appearance</span>
+              <button
+                onClick={toggleTheme}
+                className="px-4 py-2 rounded-xl border border-white/10 dark:border-white/10 border-slate-200 text-xs font-bold flex items-center gap-2 hover:bg-white/10 cursor-pointer"
+              >
+                <span>{isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
+

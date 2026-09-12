@@ -69,25 +69,24 @@ export const ContentVersionHistoryModal: React.FC<ContentVersionHistoryModalProp
     const res = contentVersioningService.rollbackToVersion(selectedVersion.versionId, operator);
 
     // Also record into Admin Audit Store
-    adminAuditStore.recordAudit({
+    adminAuditStore.recordAuditLog({
+      action: 'INVENTORY_CHANGE',
       actor: {
         id: 'ADM_002',
         name: operator.name,
-        role: operator.role as any,
         email: 'pooja.i@kiaanproperties.com',
+        role: 'COMPLIANCE_MANAGER',
       },
       entity: {
-        type: entityType === 'PROJECT' ? 'PROJECT_SPEC' : 'PRICE_SCHEDULE',
+        type: entityType === 'PROJECT' ? 'PROJECT' : 'UNIT',
         id: entityId,
-        title: entityTitle,
+        name: entityTitle,
       },
-      actionType: 'STATUS_CHANGE',
-      reasonCategory: 'CONTENT_ROLLBACK',
-      justification: `Rollback to ${selectedVersion.versionNumber}: ${rollbackReason}`,
-      changes: {
-        rolledBackToVersion: selectedVersion.versionNumber,
-        originalChangeSummary: selectedVersion.changeSummary,
-      },
+      beforeState: { rolledBackToVersion: selectedVersion.versionNumber },
+      afterState: { status: 'RESTORED_VERSION', changeSummary: selectedVersion.changeSummary },
+      reason: `Rollback to ${selectedVersion.versionNumber}: ${rollbackReason}`,
+      severity: 'WARNING',
+      ipHash: 'SHA256:88fb1290...c01e',
     });
 
     setIsRollingBack(false);

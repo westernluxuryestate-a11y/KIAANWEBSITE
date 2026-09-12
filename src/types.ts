@@ -26,12 +26,34 @@ export interface RERARecord {
   verifiedBy: string;
   certificatePdfUrl?: string;
   validUntil?: string;
+  customQrUploaded?: boolean;
+  form4Quarter?: string;
+  form4LastSyncDate?: string;
+  form4FilingHistory?: Form4FilingRecord[];
   auditHistory: {
     timestamp: string;
     action: string;
     actor: string;
     details: string;
   }[];
+}
+
+export interface Form4FilingRecord {
+  id?: string;
+  quarter: string;
+  filingDate: string;
+  architectName?: string;
+  certificateRef?: string;
+  completionPercent?: number;
+  auditorName?: string;
+  architectCertification?: string;
+  engineerCertification?: string;
+  form4DocUrl?: string;
+  escrowBalanceINR?: number;
+  constructionCostIncurredINR?: number;
+  overallCompletionPercent?: number;
+  status?: string;
+  remarks?: string;
 }
 
 export type ProjectType = 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE' | 'PLOTTED_DEVELOPMENT' | 'LUXURY_ESTATE';
@@ -110,6 +132,12 @@ export interface MediaAsset {
   category: 'EXTERIOR' | 'INTERIOR' | 'AMENITY' | 'VIEWS' | 'MASTER_PLAN' | 'CONSTRUCTION';
   resolution?: string;
   isCover?: boolean;
+  altText?: string;
+  structuredImageData?: Record<string, any>;
+  dimensions?: { width: number; height: number };
+  author?: string;
+  license?: string;
+  contentLocation?: string;
 }
 
 export interface MasterPlanHotspot {
@@ -230,6 +258,10 @@ export interface Unit {
   unitNumber: string; // e.g. "A-1203"
   configuration: string; // "3 BHK", "4 BHK", "Penthouse"
   carpetAreaSqFt: number;
+  minCarpetAreaSqFt?: number;
+  maxCarpetAreaSqFt?: number;
+  ceilingHeightFt?: number;
+  totalFloors?: number;
   facing: 'EAST' | 'WEST' | 'NORTH' | 'SOUTH' | 'NORTH_EAST' | 'SOUTH_EAST';
   orientationView: string; // e.g. "Panoramic Hinjewadi Skyline & Infinity Pool"
   balconiesCount: number;
@@ -258,6 +290,47 @@ export interface Tower {
   }[];
 }
 
+export interface MilestoneVerification {
+  isVerified: boolean;
+  verifiedDate: string; // e.g. "15 Aug 2026"
+  verifiedBy: string; // e.g. "Er. S. Deshmukh (Structural Engineer #SE-8492)"
+  authorityFilingRef?: string; // e.g. "MahaRERA Form 4 QPR-2026-Q2"
+  inspectionCertificateUrl?: string;
+  escrowReleasePercent?: number; // e.g. 10
+}
+
+export interface ProjectMilestone {
+  id: string;
+  projectId: string;
+  towerId?: string;
+  towerName?: string;
+  milestoneNumber: number; // 1 to 8
+  title: string;
+  phaseCategory: 'FOUNDATION' | 'SUBSTRUCTURE' | 'PODIUM' | 'SUPERSTRUCTURE' | 'SERVICES_MEP' | 'FINISHING' | 'HANDOVER';
+  status: 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
+  progressPercent: number; // 0 - 100
+  scheduledDate: string; // e.g. "Q2 2026" or "15 May 2026"
+  actualOrProjectedDate: string; // e.g. "12 May 2026 (14 Days Early)"
+  verification: MilestoneVerification;
+  description: string;
+  technicalDetails?: {
+    concreteVolumeCuM?: number;
+    floorsCast?: string;
+    seismicCompliance?: string;
+    fireNocStatus?: string;
+    elevatorTestingStatus?: string;
+  };
+  paymentTrancheLink?: {
+    tranchePercent: number;
+    demandMilestoneName: string;
+  };
+  sitePhotos?: {
+    url: string;
+    caption: string;
+    date: string;
+  }[];
+}
+
 export interface ConstructionUpdate {
   id: string;
   projectId: string;
@@ -266,6 +339,7 @@ export interface ConstructionUpdate {
   progressPercent: number;
   description: string;
   mediaUrls: string[];
+  milestoneId?: string;
 }
 
 export interface PropertyScore {
@@ -284,12 +358,25 @@ export interface PropertyScore {
   personalityBadge: 'Family Favourite' | "Investor's Pick" | 'Value Champion' | 'Luxury Statement' | 'Hidden Gem';
 }
 
+export interface AssetAuthorInfo {
+  userId?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  trustLevel?: 'VERIFIED_OWNER' | 'CHANNEL_PARTNER' | 'DEVELOPER' | 'ADMIN' | 'VIP_CLIENT';
+}
+
 export interface Project {
   id: string;
   slug: string;
   name: string;
   tagline: string;
+  developerId?: string;
   developerName: string;
+  localityId?: string;
+  locality_id?: string;
+  locality?: string;
   projectType: ProjectType;
   status: ProjectStatus;
   reraRecord: RERARecord;
@@ -317,16 +404,300 @@ export interface Project {
   }[];
   amenities: Amenity[];
   media: MediaAsset[];
+  bannerImageUrl?: string;
   masterPlanUrl: string;
   masterPlanHotspots?: MasterPlanHotspot[];
+  floorPlanUrl?: string;
+  ceilingHeightFt?: number;
+  totalFloors?: number;
+  totalFloorsCount?: number;
+  floorRisePerFloor?: number;
+  minCarpetAreaSqFt?: number;
+  maxCarpetAreaSqFt?: number;
+  form4AuditQuarter?: string;
+  form4LastSyncDate?: string;
   towers: Tower[];
+  constructionPercentage?: number;
+  constructionStage?: string;
   constructionUpdates: ConstructionUpdate[];
+  milestones?: ProjectMilestone[];
   propertyScore: PropertyScore;
   aiKnowledgeContext: string;
+  customSchemaData?: Record<string, any>;
   isKiaanPick?: boolean;
   isFirstLook?: boolean;
   isPublished: boolean;
   publishedAt?: string;
+  createdBy?: AssetAuthorInfo;
+  contributor?: AssetAuthorInfo;
+  updatedBy?: AssetAuthorInfo;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ============================================================
+// DEVELOPER & BUILDER ARCHITECTURE (SECTION 112)
+// ============================================================
+
+export type DeveloperType =
+  | 'LUXURY'
+  | 'TIER_1'
+  | 'CONGLOMERATE'
+  | 'BOUTIQUE'
+  | 'COMMERCIAL_SPECIALIST'
+  | 'INFRASTRUCTURE';
+
+export type DeveloperVerificationStatus = 'VERIFIED' | 'UNVERIFIED' | 'PENDING';
+
+export interface DeveloperAward {
+  id: string;
+  year: number;
+  title: string;
+  issuer: string;
+  category?: string;
+}
+
+export interface DeveloperReraInfo {
+  registrationNumber: string;
+  jurisdiction: Jurisdiction;
+  authorityName: string;
+  validUntil?: string;
+  verified: boolean;
+}
+
+export interface DeveloperSocialLinks {
+  website?: string;
+  linkedin?: string;
+  instagram?: string;
+  twitter?: string;
+  facebook?: string;
+  youtube?: string;
+}
+
+export interface DeveloperEngagementMetrics {
+  profileViews: number;
+  projectViews: number;
+  enquiriesCount: number;
+  phoneClicks: number;
+  whatsappClicks: number;
+  brochureDownloads: number;
+  shortlistCount: number;
+}
+
+export type LocalityType = 'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE' | 'IT_HUB' | 'INDUSTRIAL';
+
+export type LocalityCategory =
+  | 'POPULAR'
+  | 'EMERGING'
+  | 'PREMIUM'
+  | 'AFFORDABLE'
+  | 'COMMERCIAL_HUB'
+  | 'IT_HUB'
+  | 'RESIDENTIAL_HUB'
+  | 'INVESTMENT_HOTSPOT'
+  | 'NEW_DEVELOPMENT';
+
+export type LocalityDevelopmentStatus = 'ESTABLISHED' | 'GROWING' | 'DEVELOPING' | 'PLANNED';
+
+export interface LocalityTransitPoint {
+  name: string;
+  type: 'HIGHWAY' | 'METRO' | 'RAILWAY' | 'AIRPORT' | 'BUS_TERMINAL' | 'IT_PARK';
+  distanceKm: number;
+  commuteMinutes: number;
+  status?: 'OPERATIONAL' | 'UNDER_CONSTRUCTION' | 'PROPOSED';
+}
+
+export interface LocalityCivicAmenity {
+  name: string;
+  category: 'SCHOOL' | 'COLLEGE' | 'HOSPITAL' | 'MALL' | 'RESTAURANT' | 'PARK' | 'ENTERTAINMENT';
+  distanceKm: number;
+  rating?: number;
+}
+
+export interface LocalityLifestyleRating {
+  connectivity: number; // 0-10
+  safety: number;
+  greenSpaces: number;
+  lifestyle: number;
+  education: number;
+  healthcare: number;
+  overallScore: number;
+}
+
+export interface LocalityPriceIntelligence {
+  averagePricePerSqFt: number;
+  priceRangeMin: number;
+  priceRangeMax: number;
+  yoyGrowthPercent: number;
+  rentalYieldPercent: number;
+  historicalTrend?: { year: number; avgSqFt: number }[];
+  resaleAvgSqFt?: number;
+  newProjectAvgSqFt?: number;
+  categoryBreakdown?: { type: string; avgSqFt: number }[];
+  lastAuditedQuarter?: string;
+  resaleVsNewComparison?: {
+    resaleAvgSqFt?: number;
+    newProjectAvgSqFt?: number;
+    spreadPercentage?: number;
+    insights?: string;
+  };
+}
+
+export interface LocalityFaq {
+  id: string;
+  question: string;
+  answer: string;
+  isAiGenerated?: boolean;
+  approved?: boolean;
+}
+
+export interface LocalitySeo {
+  title: string;
+  metaDescription: string;
+  h1: string;
+  keywords: string[];
+  canonicalUrl?: string;
+}
+
+export type PuneZoneId =
+  | 'CENTRAL_PUNE'
+  | 'EAST_PUNE'
+  | 'NORTH_PUNE_PCMC'
+  | 'WEST_PUNE'
+  | 'SOUTH_PUNE'
+  | 'PUNE_OUTER';
+
+export type LocationHierarchyLevel = 'CITY' | 'ZONE' | 'LOCALITY' | 'SUB_LOCALITY' | 'ROAD_MICRO';
+
+export interface LocationHierarchyNode {
+  id: string;
+  name: string;
+  slug: string;
+  level: LocationHierarchyLevel;
+  zoneId?: PuneZoneId;
+  zoneName?: string;
+  city: string;
+  pincode?: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  parentId?: string;
+  parentName?: string;
+  localityId?: string;
+  description?: string;
+  popularLandmarks?: string[];
+  tags?: string[];
+  children?: LocationHierarchyNode[];
+}
+
+export interface Locality {
+  id: string;
+  slug: string;
+  name: string;
+  city: string;
+  district: string;
+  state: string;
+  country: string;
+  pincode: string;
+  localityType: LocalityType;
+  categories: LocalityCategory[];
+  zoneId?: PuneZoneId | string;
+  zoneName?: string;
+  parentLocality?: string;
+  subLocalities?: {
+    id?: string;
+    name: string;
+    slug: string;
+    pincode?: string;
+    coordinates: { lat: number; lng: number };
+  }[];
+  microLocations?: {
+    id?: string;
+    name: string;
+    slug: string;
+    type?: 'ROAD' | 'JUNCTION' | 'CORRIDOR' | 'MICRO_AREA';
+    coordinates: { lat: number; lng: number };
+  }[];
+  shortDescription: string;
+  fullDescription: string;
+  developmentStatus: LocalityDevelopmentStatus;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  boundaryPolygon?: { lat: number; lng: number }[];
+  coverImage: string;
+  gallery: string[];
+  videoUrl?: string;
+  nearbyAreas: string[];
+  connectivity: {
+    highways: LocalityTransitPoint[];
+    metro: LocalityTransitPoint[];
+    railway: LocalityTransitPoint[];
+    airport: LocalityTransitPoint[];
+    busConnectivity: string;
+    employmentHubs: { name: string; distanceKm: number; commuteMinutes: number; companiesCount?: number }[];
+  };
+  socialInfrastructure: {
+    schools: LocalityCivicAmenity[];
+    hospitals: LocalityCivicAmenity[];
+    malls: LocalityCivicAmenity[];
+    restaurants: LocalityCivicAmenity[];
+    parks: LocalityCivicAmenity[];
+  };
+  lifestyleRating: LocalityLifestyleRating;
+  priceIntelligence: LocalityPriceIntelligence;
+  whyLiveHere: { title: string; description: string }[];
+  whoIsThisFor: { persona: string; description: string; suitabilityPercent: number }[];
+  pros: string[];
+  considerations: string[];
+  investmentOutlook: {
+    appreciationRateYoY: number;
+    rentalYieldPercent: number;
+    futureDrivers: string[];
+  };
+  seo: LocalitySeo;
+  faqs: LocalityFaq[];
+  isVerified: boolean;
+  isFeatured: boolean;
+  status?: 'DRAFT' | 'PUBLISHED' | 'HIDDEN';
+  cityId?: string;
+  city_id?: string;
+  stateId?: string;
+  state_id?: string;
+  lastUpdated: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Developer {
+  id: string;
+  slug: string;
+  name: string;
+  legalName: string;
+  brandName?: string;
+  logo: string;
+  coverImage: string;
+  shortDescription: string;
+  fullDescription: string;
+  headquarters: string;
+  establishedYear: number;
+  yearsOfExperience: number;
+  website: string;
+  phone: string;
+  email: string;
+  socialLinks: DeveloperSocialLinks;
+  developerType: DeveloperType;
+  citiesServed: string[];
+  propertySegments: string[];
+  totalProjectsCount?: number;
+  awards?: DeveloperAward[];
+  reraInfo?: DeveloperReraInfo;
+  verificationStatus: DeveloperVerificationStatus;
+  verifiedBadge?: boolean;
+  projectIds: string[];
+  metrics: DeveloperEngagementMetrics;
   createdAt: string;
   updatedAt: string;
 }
@@ -338,14 +709,29 @@ export interface Property {
   projectId?: string;
   projectName?: string;
   unitId?: string;
+  localityId?: string;
+  locality_id?: string;
+  locality?: string;
+  property_category?: string;
+  listing_type?: 'RESALE' | 'RENT' | 'COMMERCIAL' | 'LAND' | 'NEW_PROJECT' | string;
   propertyType: PropertyType;
   status: PropertyStatus;
+  propertyStatus?: 'NEW' | 'RESALE' | PropertyStatus | string;
+  availabilityStatus?: string;
+  yearBuilt?: number;
+  propertyIdCode?: string;
+  internalRefId?: string;
   reraRecord?: RERARecord;
   location: LocationInfo;
   configuration: string;
   carpetAreaSqFt: number;
+  minCarpetAreaSqFt?: number;
+  maxCarpetAreaSqFt?: number;
   floorNumber?: number;
   totalFloors?: number;
+  ceilingHeightFt?: number;
+  floorRisePerFloor?: number;
+  floorPlanUrl?: string;
   facing: string;
   parkingCount: number;
   pricing: PricingBreakdown;
@@ -355,9 +741,118 @@ export interface Property {
   possessionStatus: 'READY_POSSESSION' | 'UNDER_CONSTRUCTION' | 'PRE_LAUNCH';
   possessionDate: string;
   overviewDescription: string;
+  headline?: string;
+  category?: string;
+  subType?: string;
+  bedroomsNumeric?: number;
+  listingPurpose?: string;
+  transactionType?: string;
+  constructionStatus?: string;
+  ageOfPropertyYears?: number;
+  plotSpecs?: {
+    areaSqFt?: number;
+    dimensions?: string;
+    boundaryWall?: 'YES' | 'NO';
+    cornerPlot?: 'YES' | 'NO';
+    gatedLayout?: 'YES' | 'NO';
+    roadWidthFt?: number;
+    titleType?: string;
+    fsi?: number;
+    zoning?: string;
+    demarcated?: boolean;
+    [key: string]: any;
+  };
+  preLeasedData?: {
+    isPreLeased?: boolean;
+    isPreRented?: boolean;
+    hasExistingTenant?: boolean;
+    tenantName?: string;
+    tenantType?: string;
+    tenantIndustry?: string;
+    monthlyRentINR?: number;
+    annualRentINR?: number;
+    escalationClause?: string;
+    currentVerifiedYieldPercent?: number;
+    currentYieldPercent?: number;
+    expectedProjectedYieldPercent?: number;
+    expectedYieldPercent?: number;
+    securityDepositINR?: number;
+    lockInPeriodYears?: number;
+    remainingLeasePeriodYears?: number;
+    leaseRegistrationStatus?: string;
+    tenantVisibility?: string;
+    capitalAppreciationPotentialPercent?: number;
+    renewalProbabilityPercent?: number;
+    roiPaybackYears?: number;
+    [key: string]: any;
+  };
   isKiaanPick?: boolean;
   isFirstLook?: boolean;
   isPublished: boolean;
+  createdBy?: AssetAuthorInfo;
+  contributor?: AssetAuthorInfo;
+  updatedBy?: AssetAuthorInfo;
+  // Resale & Standalone Assets Extended Suite (Sections 19-35)
+  furnishingStatus?: 'UNFURNISHED' | 'SEMI_FURNISHED' | 'FULLY_FURNISHED' | 'FULLY_FURNISHED_PREMIUM' | string;
+  furnishingItems?: string[];
+  vastuDetails?: {
+    includeVastuDetails?: boolean;
+    mainEntranceDirection?: string;
+    propertyFacing?: string;
+    balconyDirection?: string;
+    kitchenDirection?: string;
+    masterBedroomDirection?: string;
+    vastuCompliant?: boolean;
+    vastuConsultantCertified?: boolean;
+    cornerProperty?: boolean;
+    quickTags?: Record<string, boolean>;
+  };
+  legalDocsAudit?: {
+    publicVerificationStatus?: string;
+    documentsVerifiedCount?: number;
+    privateInternalDocCount?: number;
+    checklist?: Record<string, boolean>;
+  };
+  propertyConditionDetails?: {
+    conditionStatus?: string;
+    ageYears?: number;
+    lastRenovatedYear?: number;
+    structuralCondition?: string;
+    paintCondition?: string;
+    flooringCondition?: string;
+    plumbingCondition?: string;
+    electricalCondition?: string;
+  };
+  brokerageTerms?: {
+    applicable?: boolean;
+    brokerageType?: string;
+    brokeragePercentage?: number;
+    brokerageAmountINR?: number;
+    paidBy?: string;
+  };
+  availabilityDetails?: {
+    availableNow?: boolean;
+    availableFromDate?: string;
+    possessionDate?: string;
+    expectedPossession?: string;
+    bookingStatus?: string;
+  };
+  buyerTenantPreferences?: Record<string, any>;
+  investmentMetrics?: {
+    isInvestmentOpportunity?: boolean;
+    annualRentalIncomeINR?: number;
+    monthlyRentalIncomeINR?: number;
+    grossYieldPercent?: number;
+    expectedIrrEstimatePercent?: number;
+    expectedRoiEstimatePercent?: number;
+    exitPotential?: string;
+    resaleLiquidity?: string;
+    investmentHorizon?: string;
+  };
+  financialCalculations?: Record<string, any>;
+  qualityScoreValue?: number;
+  trustScoreValue?: number;
+  universalListingData?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -476,6 +971,104 @@ export interface CRMEvent {
   lastAttemptAt?: string;
 }
 
+// ==========================================
+// CAREERS & TALENT ACQUISITION SUITE TYPES
+// ==========================================
+
+export type JobDepartment =
+  | 'LUXURY_ADVISORY_SALES'
+  | 'LEGAL_MAHARERA_REGULATORY'
+  | 'SPATIAL_ARCHITECTURE_3D_BIM'
+  | 'ENGINEERING_TECH_AI'
+  | 'MARKETING_BRAND_COMMUNICATIONS'
+  | 'WEALTH_CLIENT_RELATIONSHIP'
+  | 'FINANCE_ACCOUNTS_ESCROW'
+  | 'OPERATIONS_CONCIERGE';
+
+export type JobType =
+  | 'FULL_TIME'
+  | 'CONTRACT'
+  | 'EXECUTIVE_LEADERSHIP'
+  | 'PART_TIME'
+  | 'INTERNSHIP';
+
+export type JobExperienceLevel =
+  | 'ENTRY'
+  | 'MID'
+  | 'SENIOR'
+  | 'LEAD'
+  | 'EXECUTIVE';
+
+export type JobStatus =
+  | 'PUBLISHED'
+  | 'DRAFT'
+  | 'PAUSED'
+  | 'CLOSED';
+
+export interface JobPost {
+  id: string;
+  slug: string;
+  title: string;
+  department: JobDepartment | string;
+  departmentLabel: string;
+  location: string;
+  jobType: JobType;
+  jobTypeLabel: string;
+  experienceLevel: JobExperienceLevel;
+  experienceYearsText: string;
+  salaryRangeDisplay: string;
+  openingsCount: number;
+  isUrgent?: boolean;
+  isFeatured?: boolean;
+  requiresMahaReraKnowledge?: boolean;
+  shortSummary: string;
+  overviewStory: string;
+  responsibilities: string[];
+  requirements: string[];
+  preferredQualifications?: string[];
+  benefitsAndPerks: string[];
+  deadlineDate?: string;
+  status: JobStatus;
+  createdBy?: AssetAuthorInfo;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CandidateApplicationStatus =
+  | 'NEW'
+  | 'REVIEWED'
+  | 'SHORTLISTED'
+  | 'INTERVIEW_SCHEDULED'
+  | 'OFFERED'
+  | 'REJECTED';
+
+export interface JobApplication {
+  id: string;
+  applicationRef: string;
+  jobId: string;
+  jobTitle: string;
+  jobDepartment: string;
+  candidateName: string;
+  candidateEmail: string;
+  candidatePhone: string;
+  currentLocation: string;
+  totalExperienceYears: number;
+  currentCompany?: string;
+  currentDesignation?: string;
+  expectedCtcLPA: string;
+  noticePeriodDays: string;
+  linkedInUrl?: string;
+  portfolioUrl?: string;
+  resumeFileName?: string;
+  resumeFileUrl?: string;
+  coverNote?: string;
+  hasMahaReraCertification?: boolean;
+  status: CandidateApplicationStatus;
+  adminNotes?: string;
+  submittedAt: string;
+  reviewedBy?: string;
+}
+
 export interface AnalyticsEvent {
   id: string;
   sessionId: string;
@@ -497,7 +1090,8 @@ export type UserRole =
   | 'FINANCE_MANAGER'
   | 'BOOKING_MANAGER'
   | 'ANALYST'
-  | 'CUSTOMER';
+  | 'CUSTOMER'
+  | 'VISITOR';
 
 export interface UserSession {
   userId: string;
@@ -1342,7 +1936,9 @@ export type FaqCategory =
   | 'DOCUMENTS'
   | 'AMENITIES'
   | 'NEGOTIATION'
-  | 'AVAILABILITY';
+  | 'AVAILABILITY'
+  | 'NRI_LEGAL'
+  | 'FINANCE_ESCROW';
 
 export interface GroundedFaqItem {
   id: string;
@@ -1612,6 +2208,108 @@ export interface DeviceAccessibilityPreferences {
   keyboardNavigationActive: boolean;
 }
 
+// ============================================================
+// 140 - 150. KIAAN JOURNAL & REAL ESTATE EDITORIAL INTELLIGENCE
+// ============================================================
 
+export type BlogCategory =
+  | 'ALL'
+  | 'MARKET_INTELLIGENCE'
+  | 'VASTU_COMPLIANCE'
+  | 'PRE_LEASED_COMMERCIAL'
+  | 'TAX_WEALTH'
+  | 'GST_REAL_ESTATE'
+  | 'TDS_COMPLIANCE'
+  | 'MAHARERA_REGULATORY'
+  | 'COOP_SOCIETY_CONDO'
+  | 'CONSTRUCTION_TECH'
+  | 'AMENITIES_LIFESTYLE'
+  | 'LEGAL_DUE_DILIGENCE'
+  | 'HOME_LOANS_FINANCE'
+  | 'RESALE_VS_NEW'
+  | 'NRI_INVESTMENT'
+  | 'INFRASTRUCTURE'
+  | 'ARCHITECTURE_DESIGN';
 
+export interface KnowledgeTopic {
+  id: string;
+  slug: string;
+  title: string;
+  category: BlogCategory;
+  categoryLabel: string;
+  searchIntentKeywords: string[];
+  simpleEnglishSummary: string;
+  humanizedExplanation: string;
+  practicalExample: {
+    scenarioTitle: string;
+    scenarioText: string;
+    calculationOrOutcome: string;
+  };
+  statutoryRuleOrSection?: string;
+  commonPitfalls: string[];
+  keyActionChecklist: string[];
+  faqs: {
+    question: string;
+    answer: string;
+  }[];
+  seoMeta: {
+    metaTitle: string;
+    metaDescription: string;
+    focusKeywords: string[];
+    readabilityScore: number; // 0 to 100
+    seoScore: number; // 0 to 100
+    searchVolumeMonthlyEst: string;
+    structuredDataSchemaType: 'Article' | 'FAQPage' | 'HowTo' | 'FinancialProduct';
+  };
+  relatedTopicIds?: string[];
+  relatedProjectSlugs?: string[];
+}
 
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  excerpt: string;
+  category: BlogCategory;
+  categoryLabel: string;
+  author: {
+    name: string;
+    role: string;
+    avatar: string;
+    credentials?: string;
+  };
+  publishedDate: string;
+  readTimeMinutes: number;
+  coverImage: string;
+  tags: string[];
+  featured?: boolean;
+  trending?: boolean;
+  viewCount?: number;
+  content: {
+    overview: string;
+    keyTakeaways: string[];
+    sections: {
+      heading: string;
+      body: string[];
+      statCallout?: {
+        metric: string;
+        label: string;
+        source: string;
+      };
+      quote?: {
+        text: string;
+        author: string;
+        title: string;
+      };
+    }[];
+    statutoryDisclaimer?: string;
+    relatedProjectSlugs?: string[];
+    relatedPropertyIds?: string[];
+    downloadableReportPdf?: {
+      title: string;
+      fileName: string;
+      fileSize: string;
+    };
+  };
+}

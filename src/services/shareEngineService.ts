@@ -49,17 +49,17 @@ export function createSharePackage(params: {
 Explore full 3D Digital Twin, floorplans & MahaRERA compliance:
 👉 ${fullUrl}
 
-_Discovered on Kiaan Luxury Real Estate Experience_`;
+_Discovered on Kiaan Properties Digital Experience_`;
 
   // Social share snippet
-  const socialShareSnippet = `Exploring ${title} in ${locationName} (${configuration}, ${priceFormatted}) on Kiaan Estates. Features 3D architectural digital twin & verified MahaRERA escrow data: ${fullUrl}`;
+  const socialShareSnippet = `Exploring ${title} in ${locationName} (${configuration}, ${priceFormatted}) on Kiaan Properties. Features 3D architectural digital twin & verified MahaRERA escrow data: ${fullUrl}`;
 
   // Email subject & body HTML
   const emailSubject = `Kiaan Luxury Property Discovery: ${title} (${locationName})`;
   const emailBodyHtml = `
 Hello,
 
-I wanted to share this luxury property on Kiaan Estates:
+I wanted to share this luxury property on Kiaan Properties:
 
 Residence: ${title}
 Location: ${locationName}

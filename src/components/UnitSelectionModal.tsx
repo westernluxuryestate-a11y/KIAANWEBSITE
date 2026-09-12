@@ -19,6 +19,8 @@ import {
   Layers,
 } from 'lucide-react';
 import { formatINR } from '../services/calculatorEngine';
+import { SeoImage } from './SeoImage';
+import { seoEngine } from '../services/seoAndMetadataEngine';
 import { ReraBadge } from './ReraBadge';
 
 interface UnitSelectionModalProps {
@@ -192,13 +194,31 @@ export const UnitSelectionModal: React.FC<UnitSelectionModalProps> = ({
 
               {selectedUnit.floorPlan && (
                 <div className="rounded-xl overflow-hidden border border-white/10 relative h-64 bg-neutral-900">
-                  <img
+                  <SeoImage
                     src={selectedUnit.floorPlan.layoutImageUrl}
-                    alt={selectedUnit.floorPlan.title}
+                    alt={seoEngine.generateMediaAltText({
+                      entityType: 'UNIT',
+                      entityTitle: project.name,
+                      locality: project.location.microMarket || 'Pune',
+                      city: project.location.city || 'Pune',
+                      configuration: selectedUnit.configuration,
+                      carpetAreaSqFt: selectedUnit.carpetAreaSqFt,
+                      mediaCategory: 'MASTER_PLAN',
+                      customCaption: selectedUnit.floorPlan.title,
+                    })}
+                    context={{
+                      entityType: 'UNIT',
+                      entityTitle: project.name,
+                      locality: project.location.microMarket || 'Pune',
+                      city: project.location.city || 'Pune',
+                      configuration: selectedUnit.configuration,
+                      carpetAreaSqFt: selectedUnit.carpetAreaSqFt,
+                      mediaCategory: 'MASTER_PLAN',
+                      customCaption: selectedUnit.floorPlan.title,
+                    }}
                     className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
                   />
-                  <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-[11px] font-mono text-white">
+                  <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md text-[11px] font-mono text-white pointer-events-none">
                     {selectedUnit.floorPlan.title}
                   </div>
                 </div>

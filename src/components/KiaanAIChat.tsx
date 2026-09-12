@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Bot,
   Send,
@@ -72,8 +72,9 @@ interface Message {
 }
 
 export const KiaanAIChat: React.FC<{
+  initialPrompt?: string;
   onOpenProjectExperience?: (projectId: string) => void;
-}> = ({ onOpenProjectExperience }) => {
+}> = ({ initialPrompt, onOpenProjectExperience }) => {
   // Navigation within Intelligence Suite
   const [activeSubTab, setActiveSubTab] = useState<
     'CHAT' | 'DNA_RECOMMENDATIONS' | 'INTELLIGENCE_SCORE' | 'PRICE_LADDER' | 'TRADEOFF_COMMUTE' | 'PROPERTY_BATTLE' | 'SURPRISE_ME' | 'PROPERTY_MEMORY'
@@ -125,12 +126,15 @@ export const KiaanAIChat: React.FC<{
     'Show similar properties in Baner',
   ];
 
+  const processedPromptRef = useRef<string | null>(null);
+
   const handleSend = async (textToSend?: string) => {
     const text = textToSend || inputPrompt;
     if (!text.trim() || isLoading) return;
 
+    const uniqueSuffix = Math.random().toString(36).substring(2, 8);
     const userMsg: Message = {
-      id: `usr_${Date.now()}`,
+      id: `usr_${Date.now()}_${uniqueSuffix}`,
       sender: 'user',
       text: text.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -155,8 +159,9 @@ export const KiaanAIChat: React.FC<{
       const json = await res.json();
 
       if (json.success && json.data) {
+        const modelSuffix = Math.random().toString(36).substring(2, 8);
         const modelMsg: Message = {
-          id: `mod_${Date.now()}`,
+          id: `mod_${Date.now()}_${modelSuffix}`,
           sender: 'model',
           text: json.data.text,
           sourceClassification: json.data.sourceClassification || 'VERIFIED',
@@ -174,12 +179,13 @@ export const KiaanAIChat: React.FC<{
         throw new Error(json.message || 'Error processing response');
       }
     } catch (e: any) {
+      const errSuffix = Math.random().toString(36).substring(2, 8);
       setMessages((prev) => [
         ...prev,
         {
-          id: `err_${Date.now()}`,
+          id: `err_${Date.now()}_${errSuffix}`,
           sender: 'model',
-          text: "I don't have verified information for that yet from our compliance desk.",
+          text: `⚠️ **AI Intelligence Notice**: ${e.message || 'Unable to connect to live AI services. Showing verified local knowledge.'}`,
           sourceClassification: 'VERIFIED',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -188,6 +194,13 @@ export const KiaanAIChat: React.FC<{
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.trim() && processedPromptRef.current !== initialPrompt.trim()) {
+      processedPromptRef.current = initialPrompt.trim();
+      handleSend(initialPrompt.trim());
+    }
+  }, [initialPrompt]);
 
   const getClassificationBadge = (cls?: 'VERIFIED' | 'CALCULATED' | 'ESTIMATED' | 'AI_ANALYSIS') => {
     switch (cls) {

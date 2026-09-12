@@ -23,23 +23,45 @@ import { Unit } from '../types';
 import { formatINR } from '../services/calculatorEngine';
 
 interface ComparisonMatrixModalProps {
-  units: Unit[];
+  units?: Unit[];
+  unitIds?: string[];
   onClose: () => void;
-  onRemoveUnit: (unitId: string) => void;
-  onHoldUnit: (unit: Unit) => void;
+  onRemoveUnit?: (unitId: string) => void;
+  onHoldUnit?: (unit: Unit) => void;
+  onSelectUnitForDigitalTwin?: (unit: Unit) => void;
 }
 
 export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
-  units,
+  units = [],
+  unitIds = [],
   onClose,
   onRemoveUnit,
   onHoldUnit,
+  onSelectUnitForDigitalTwin,
 }) => {
-  if (units.length === 0) {
-    return null;
+  const safeUnits = Array.isArray(units) && units.length > 0 ? units : [];
+
+  if (safeUnits.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl">
+        <div className="relative w-full max-w-md bg-[#090D14] border border-white/15 rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+          <Layers className="w-12 h-12 text-amber-400 mx-auto opacity-80" />
+          <h3 className="text-lg font-serif font-bold text-white">No Units Selected</h3>
+          <p className="text-xs text-white/60">
+            Please add residences from the project page or interactive floor plans to compare them side-by-side.
+          </p>
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all cursor-pointer shadow-lg"
+          >
+            Close Comparison
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  const baseUnit = units[0];
+  const baseUnit = safeUnits[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto">
@@ -74,7 +96,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                   <th className="p-4 w-48 text-white/40 font-mono uppercase tracking-wider border-b border-white/10 bg-black/40 sticky left-0 z-10">
                     Attributes
                   </th>
-                  {units.map((unit, idx) => (
+                  {safeUnits.map((unit, idx) => (
                     <th
                       key={unit.id}
                       className="p-4 min-w-[260px] border-b border-white/10 bg-white/[0.02] space-y-2 align-top"
@@ -87,7 +109,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                           <h4 className="text-base font-serif font-bold text-white mt-1">{unit.unitNumber}</h4>
                           <p className="text-[11px] text-white/60">{unit.projectName}</p>
                         </div>
-                        {units.length > 1 && (
+                        {safeUnits.length > 1 && onRemoveUnit && (
                           <button
                             onClick={() => onRemoveUnit(unit.id)}
                             className="text-white/40 hover:text-rose-400 p-1 cursor-pointer"
@@ -100,7 +122,10 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
 
                       <div className="pt-2">
                         <button
-                          onClick={() => onHoldUnit(unit)}
+                          onClick={() => {
+                            if (onHoldUnit) onHoldUnit(unit);
+                            else if (onSelectUnitForDigitalTwin) onSelectUnitForDigitalTwin(unit);
+                          }}
                           className="w-full py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/20 cursor-pointer"
                         >
                           <Lock className="w-3.5 h-3.5" />
@@ -116,7 +141,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 1. Configuration & Floor */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Configuration & Level</td>
-                  {units.map((u) => (
+                  {safeUnits.map((u) => (
                     <td key={u.id} className="p-4 text-white">
                       <div className="font-bold text-sm">{u.configuration}</div>
                       <div className="text-white/50 text-[11px]">Floor Level {u.floorNumber} • {u.towerName}</div>
@@ -127,7 +152,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 2. Carpet Area & Balcony */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Carpet & Deck Area</td>
-                  {units.map((u, i) => {
+                  {safeUnits.map((u, i) => {
                     const diffSqFt = i > 0 ? u.carpetAreaSqFt - baseUnit.carpetAreaSqFt : 0;
                     return (
                       <td key={u.id} className="p-4 text-white font-mono">
@@ -150,7 +175,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 3. Base Price */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Base Agreement Price</td>
-                  {units.map((u, i) => {
+                  {safeUnits.map((u, i) => {
                     const priceDelta = i > 0 ? u.pricing.basePrice - baseUnit.pricing.basePrice : 0;
                     return (
                       <td key={u.id} className="p-4 text-white">
@@ -169,7 +194,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 4. Total All-In Cost (Statutory Taxes) */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">All-In Acquisition Cost</td>
-                  {units.map((u) => (
+                  {safeUnits.map((u) => (
                     <td key={u.id} className="p-4 text-white">
                       <div className="text-sm font-mono font-bold text-emerald-400">
                         {formatINR(u.pricing.totalEstimatedAcquisitionCost)}
@@ -186,7 +211,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 5. Orientation & Sunlight */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Sunlight & Orientation</td>
-                  {units.map((u) => (
+                  {safeUnits.map((u) => (
                     <td key={u.id} className="p-4 text-white">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-amber-300">
                         <Compass className="w-3.5 h-3.5" />
@@ -200,7 +225,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 6. Parking & Elevators */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Private Parking Bays</td>
-                  {units.map((u) => (
+                  {safeUnits.map((u) => (
                     <td key={u.id} className="p-4 text-white font-mono">
                       <span className="font-bold">{u.parkingSlots} Covered Bays</span> (EV-Ready)
                     </td>
@@ -210,7 +235,7 @@ export const ComparisonMatrixModal: React.FC<ComparisonMatrixModalProps> = ({
                 {/* 7. Status */}
                 <tr>
                   <td className="p-4 font-semibold text-white/60 bg-black/40 sticky left-0">Live Inventory Status</td>
-                  {units.map((u) => (
+                  {safeUnits.map((u) => (
                     <td key={u.id} className="p-4">
                       <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-[11px]">
                         {u.status}

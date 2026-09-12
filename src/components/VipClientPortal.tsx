@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { VipHoldRecord, VipSiteVisitBooking, LegalDossierDocument, Project, Unit } from '../types';
+import { VipHoldRecord, VipSiteVisitBooking, LegalDossierDocument, Project, Unit, UserSession } from '../types';
 import { formatINR } from '../services/calculatorEngine';
 import {
   Crown,
@@ -25,14 +25,25 @@ import {
   PlusCircle,
   Coffee,
   KeyRound,
+  Lock,
+  ArrowRight,
 } from 'lucide-react';
 
 interface VipClientPortalProps {
+  userSession?: UserSession | null;
+  onOpenLogin?: () => void;
+  onQuickDemoLogin?: () => void;
   onOpenDigitalTwin: (project: Project, unitId?: string) => void;
   onAddToComparison: (unit: Unit) => void;
 }
 
-export function VipClientPortal({ onOpenDigitalTwin, onAddToComparison }: VipClientPortalProps) {
+export function VipClientPortal({
+  userSession,
+  onOpenLogin,
+  onQuickDemoLogin,
+  onOpenDigitalTwin,
+  onAddToComparison,
+}: VipClientPortalProps) {
   const [activeSection, setActiveSection] = useState<'HOLDS' | 'SITE_VISITS' | 'DOSSIERS' | 'SHORTLIST'>('HOLDS');
 
   // Holds state
@@ -156,21 +167,61 @@ export function VipClientPortal({ onOpenDigitalTwin, onAddToComparison }: VipCli
 
   return (
     <div className="space-y-8 animate-fade-in" id="vip-client-portal">
-      {/* Header Banner */}
+      {/* Header Banner: Status Aware */}
       <div className="rounded-3xl bg-gradient-to-br from-[#121B2F] via-[#0B101C] to-[#040609] border border-amber-500/30 p-6 sm:p-10 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-3xl space-y-4 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <Crown className="w-4 h-4 text-amber-400" />
-            <span>Kiaan VIP Private Client Portal</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Kiaan VIP Private Client Portal</span>
+            </div>
+
+            {userSession ? (
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-xs font-bold border border-emerald-500/40">
+                Active Session: {userSession.name} ({userSession.role === 'CUSTOMER' ? 'Diamond VIP' : 'Admin'})
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-white/10 text-white/70 font-mono text-xs font-semibold border border-white/10">
+                Visitor Preview Mode
+              </span>
+            )}
           </div>
+
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-tight">
-            Institutional Reservations, Chauffeur Site Visits & Due Diligence Dossiers
+            {userSession
+              ? `Welcome to Your Private Investor Command Center, ${userSession.name}`
+              : 'Institutional Reservations, Chauffeur Site Visits & Due Diligence Dossiers'}
           </h1>
           <p className="text-sm text-white/60 leading-relaxed">
-            Your private client command center: manage 15-minute concurrency unit locks, track certified MahaRERA legal title reports, and schedule bespoke site visits with luxury vehicle escort.
+            {userSession
+              ? 'Your private client privileges are enabled: manage 15-minute concurrency unit locks, review certified MahaRERA Form 4 audits, and dispatch bespoke chauffeur escorts.'
+              : 'Sign in to access your personal 15-minute concurrency unit locks, track certified MahaRERA legal title reports, and schedule bespoke site visits with luxury vehicle escort.'}
           </p>
+
+          {!userSession && (
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              {onOpenLogin && (
+                <button
+                  onClick={onOpenLogin}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>Sign In / Enter VIP Lounge</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+              {onQuickDemoLogin && (
+                <button
+                  onClick={onQuickDemoLogin}
+                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm transition-all border border-white/15 cursor-pointer"
+                >
+                  ⚡ 1-Click VIP Demo (Rajesh Malhotra)
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Quick Stats Strip */}

@@ -21,7 +21,11 @@ import {
   Lock,
   ArrowUpDown,
   Filter,
+  Map,
+  List,
+  MapPin,
 } from 'lucide-react';
+import { SearchProjectMapView } from './search/SearchProjectMapView';
 
 interface UnifiedSearchViewProps {
   onOpenDigitalTwin: (project: Project, unitId?: string) => void;
@@ -53,7 +57,9 @@ export function UnifiedSearchView({
   } | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [displayFormat, setDisplayFormat] = useState<'LIST' | 'MAP'>('LIST');
   const [activeViewMode, setActiveViewMode] = useState<'PROJECTS' | 'UNITS'>('UNITS');
+  const [selectedMapProject, setSelectedMapProject] = useState<Project | null>(null);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
   const microMarkets = ['ALL', 'Wakad', 'Baner', 'Hinjewadi', 'Balewadi', 'Kharadi', 'Koregaon Park'];
@@ -472,47 +478,112 @@ export function UnifiedSearchView({
 
         {/* Results Area */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Controls Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white/[0.03] border border-white/10 p-4">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setActiveViewMode('UNITS')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  activeViewMode === 'UNITS'
-                    ? 'bg-amber-500 text-black shadow-lg'
-                    : 'bg-white/[0.05] text-white/70 hover:bg-white/10'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Unit Digital Twins ({searchResults?.filteredUnits?.length || 0})</span>
-              </button>
-              <button
-                onClick={() => setActiveViewMode('PROJECTS')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-                  activeViewMode === 'PROJECTS'
-                    ? 'bg-amber-500 text-black shadow-lg'
-                    : 'bg-white/[0.05] text-white/70 hover:bg-white/10'
-                }`}
-              >
-                <Building className="w-3.5 h-3.5" />
-                <span>Projects ({searchResults?.filteredProjects?.length || 0})</span>
-              </button>
+          {/* Controls Bar with List View vs Map View Toggle */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-2xl bg-white/[0.03] border border-white/10 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* PRIMARY TOGGLE: List View vs Map View */}
+              <div className="inline-flex items-center rounded-xl bg-white/[0.06] p-1 border border-white/10 shadow-inner">
+                <button
+                  id="search-toggle-list-view"
+                  type="button"
+                  onClick={() => setDisplayFormat('LIST')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    displayFormat === 'LIST'
+                      ? 'bg-amber-500 text-black shadow-md'
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>List View</span>
+                </button>
+                <button
+                  id="search-toggle-map-view"
+                  type="button"
+                  onClick={() => setDisplayFormat('MAP')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    displayFormat === 'MAP'
+                      ? 'bg-amber-500 text-black shadow-md'
+                      : 'text-white/70 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Map className="w-3.5 h-3.5" />
+                  <span>Map View</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                      displayFormat === 'MAP'
+                        ? 'bg-black/20 text-black'
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    }`}
+                  >
+                    {searchResults?.filteredProjects?.length || 0}
+                  </span>
+                </button>
+              </div>
+
+              {/* SECONDARY LIST SUB-TABS: Units vs Projects (Only active when in List View) */}
+              {displayFormat === 'LIST' && (
+                <div className="flex items-center gap-1.5 pl-2 border-l border-white/10">
+                  <button
+                    onClick={() => setActiveViewMode('UNITS')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeViewMode === 'UNITS'
+                        ? 'bg-white/15 text-white font-bold border border-white/20'
+                        : 'bg-white/[0.03] text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <Layers className="w-3 h-3" />
+                    <span>Unit Twins ({searchResults?.filteredUnits?.length || 0})</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveViewMode('PROJECTS')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeViewMode === 'PROJECTS'
+                        ? 'bg-white/15 text-white font-bold border border-white/20'
+                        : 'bg-white/[0.03] text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <Building className="w-3 h-3" />
+                    <span>Projects ({searchResults?.filteredProjects?.length || 0})</span>
+                  </button>
+                </div>
+              )}
+
+              {/* MAP VIEW HINT: When in Map View */}
+              {displayFormat === 'MAP' && (
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-amber-400/90 pl-2 border-l border-white/10">
+                  <MapPin className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>Interactive GIS locations plotted with price & transit layers</span>
+                </div>
+              )}
             </div>
 
-            {/* Sort Order Selector */}
+            {/* Right Side: Sort Selector (when in List View) or Quick Switch button */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="text-white/50">Sort by:</span>
-              <select
-                id="search-sort-select"
-                value={filter.sortOrder}
-                onChange={(e) => setFilter({ ...filter, sortOrder: e.target.value as any })}
-                className="rounded-xl bg-white/[0.05] border border-white/10 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
-              >
-                <option value="FEATURED" className="bg-[#0D1527]">Featured First</option>
-                <option value="PRICE_LOW_HIGH" className="bg-[#0D1527]">Price: Low to High</option>
-                <option value="PRICE_HIGH_LOW" className="bg-[#0D1527]">Price: High to Low</option>
-                <option value="CARPET_AREA_HIGH_LOW" className="bg-[#0D1527]">Carpet Area: High to Low</option>
-              </select>
+              {displayFormat === 'LIST' ? (
+                <>
+                  <span className="text-white/50">Sort by:</span>
+                  <select
+                    id="search-sort-select"
+                    value={filter.sortOrder}
+                    onChange={(e) => setFilter({ ...filter, sortOrder: e.target.value as any })}
+                    className="rounded-xl bg-white/[0.05] border border-white/10 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                  >
+                    <option value="FEATURED" className="bg-[#0D1527]">Featured First</option>
+                    <option value="PRICE_LOW_HIGH" className="bg-[#0D1527]">Price: Low to High</option>
+                    <option value="PRICE_HIGH_LOW" className="bg-[#0D1527]">Price: High to Low</option>
+                    <option value="CARPET_AREA_HIGH_LOW" className="bg-[#0D1527]">Carpet Area: High to Low</option>
+                  </select>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDisplayFormat('LIST')}
+                  className="text-xs text-white/60 hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>Switch to List View</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -524,8 +595,24 @@ export function UnifiedSearchView({
             </div>
           )}
 
-          {/* VIEW MODE 1: INDIVIDUAL UNIT DIGITAL TWINS */}
-          {!loading && activeViewMode === 'UNITS' && (
+          {/* VIEW MODE: INTERACTIVE MAP VIEW */}
+          {!loading && displayFormat === 'MAP' && (
+            <div className="space-y-4 animate-fade-in">
+              <SearchProjectMapView
+                projects={searchResults?.filteredProjects || []}
+                selectedProject={selectedMapProject}
+                onSelectProject={(p) => setSelectedMapProject(p)}
+                onOpenDigitalTwin={onOpenDigitalTwin}
+                onScheduleVisit={onScheduleVisit}
+                onResetFilters={handleResetFilters}
+                activeMicroMarket={filter.microMarket}
+                onSelectMicroMarket={(market) => setFilter({ ...filter, microMarket: market })}
+              />
+            </div>
+          )}
+
+          {/* VIEW MODE 1: INDIVIDUAL UNIT DIGITAL TWINS (LIST VIEW) */}
+          {!loading && displayFormat === 'LIST' && activeViewMode === 'UNITS' && (
             <div className="space-y-4">
               {searchResults?.filteredUnits?.length === 0 ? (
                 <div className="p-12 text-center rounded-3xl bg-white/[0.02] border border-dashed border-white/10 space-y-3">
@@ -596,6 +683,19 @@ export function UnifiedSearchView({
                           </div>
 
                           <div className="flex items-center gap-2">
+                            {parentProject && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMapProject(parentProject);
+                                  setDisplayFormat('MAP');
+                                }}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-amber-500/20 border border-white/10 text-white/80 hover:text-amber-400 transition-all cursor-pointer"
+                                title={`View ${parentProject.name} on Interactive Map`}
+                              >
+                                <MapPin className="w-4 h-4 text-amber-400" />
+                              </button>
+                            )}
                             <button
                               onClick={() => onAddToComparison(unit)}
                               className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white transition-all cursor-pointer"
@@ -620,8 +720,8 @@ export function UnifiedSearchView({
             </div>
           )}
 
-          {/* VIEW MODE 2: PROJECTS VIEW */}
-          {!loading && activeViewMode === 'PROJECTS' && (
+          {/* VIEW MODE 2: PROJECTS VIEW (LIST VIEW) */}
+          {!loading && displayFormat === 'LIST' && activeViewMode === 'PROJECTS' && (
             <div className="space-y-4">
               {searchResults?.filteredProjects?.length === 0 ? (
                 <div className="p-12 text-center rounded-3xl bg-white/[0.02] border border-dashed border-white/10 space-y-3">
@@ -677,6 +777,18 @@ export function UnifiedSearchView({
                           </div>
 
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedMapProject(project);
+                                setDisplayFormat('MAP');
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-amber-500/20 text-white/70 hover:text-amber-400 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                              title="View on Interactive Map"
+                            >
+                              <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                              <span className="hidden sm:inline">Map</span>
+                            </button>
                             <button
                               onClick={() => onScheduleVisit(project)}
                               className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/10 text-white text-xs font-semibold transition-all cursor-pointer"

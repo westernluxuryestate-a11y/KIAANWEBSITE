@@ -14,6 +14,7 @@ import {
   Sliders,
   Scale,
   Building,
+  Landmark,
 } from 'lucide-react';
 import {
   formatINR,
@@ -27,7 +28,18 @@ import {
   PropertyValuationInput,
 } from '../services/calculatorEngine';
 
+import { PropertyInvestmentSuite } from './PropertyInvestmentSuite';
+import { KiaanIntelligentQueryWidget } from './KiaanIntelligentQueryWidget';
+import { ScenarioSensitivitySuite } from './ScenarioSensitivitySuite';
+import { DevelopmentFeasibilitySuite } from './DevelopmentFeasibilitySuite';
+import { ResaleTaxationSuite } from './ResaleTaxationSuite';
+
 export type CalculatorTab =
+  | 'AI_INTELLIGENT_QUERY'
+  | 'PROPERTY_INVESTMENT'
+  | 'SCENARIO_SENSITIVITY'
+  | 'DEVELOPMENT_FEASIBILITY'
+  | 'RESALE_TAXATION'
   | 'AFFORDABILITY'
   | 'ACQUISITION_COST'
   | 'INVESTMENT_SCENARIOS'
@@ -38,7 +50,7 @@ export type CalculatorTab =
   | 'RENTAL_YIELD';
 
 export const CalculatorWidget: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<CalculatorTab>('AFFORDABILITY');
+  const [activeTab, setActiveTab] = useState<CalculatorTab>('AI_INTELLIGENT_QUERY');
 
   // Universal Inputs
   const [propertyPrice, setPropertyPrice] = useState<number>(15000000); // 1.5 Cr default
@@ -125,14 +137,19 @@ export const CalculatorWidget: React.FC = () => {
   const taxShieldResult = calculateTaxShieldEngine({ loanPrincipal, annualInterestRatePercent: interestRate });
 
   const calculatorTabs: { id: CalculatorTab; label: string; icon: any; category: string }[] = [
-    { id: 'AFFORDABILITY', label: '74. Affordability Engine', icon: Scale, category: 'CORE' },
-    { id: 'ACQUISITION_COST', label: '75. Total Cost Calculator', icon: IndianRupee, category: 'CORE' },
-    { id: 'INVESTMENT_SCENARIOS', label: '76. Investment Engine', icon: TrendingUp, category: 'INVESTMENT' },
-    { id: 'BUY_VS_RENT', label: '77. Buy vs. Rent', icon: Home, category: 'ANALYSIS' },
-    { id: 'VALUATION', label: '78. Property Valuation', icon: Building, category: 'VALUATION' },
-    { id: 'EMI', label: 'Home Loan EMI', icon: Calculator, category: 'CORE' },
-    { id: 'TAX_SHIELD', label: 'Statutory Tax Shield', icon: Zap, category: 'TAX' },
-    { id: 'RENTAL_YIELD', label: 'Rental Yield', icon: Percent, category: 'INVESTMENT' },
+    { id: 'AI_INTELLIGENT_QUERY', label: '🎯 Ask Kiaan AI', icon: Zap, category: 'AI' },
+    { id: 'PROPERTY_INVESTMENT', label: '📈 Property Investment (17 Engines)', icon: Landmark, category: 'INVESTMENT' },
+    { id: 'SCENARIO_SENSITIVITY', label: '⚖️ What-If Scenarios & Sensitivity', icon: Sliders, category: 'INVESTMENT' },
+    { id: 'DEVELOPMENT_FEASIBILITY', label: '🏗️ FSI & Development Feasibility', icon: Building, category: 'DEVELOP' },
+    { id: 'RESALE_TAXATION', label: '💰 Resale Profit & LTCG Taxes', icon: IndianRupee, category: 'SELL' },
+    { id: 'AFFORDABILITY', label: '🏠 74. Affordability Engine', icon: Scale, category: 'BUY' },
+    { id: 'ACQUISITION_COST', label: '💳 75. Total Cost Calculator', icon: IndianRupee, category: 'BUY' },
+    { id: 'INVESTMENT_SCENARIOS', label: '📊 76. Investment Scenarios', icon: TrendingUp, category: 'INVESTMENT' },
+    { id: 'BUY_VS_RENT', label: '⚖️ 77. Buy vs. Rent', icon: Home, category: 'BUY' },
+    { id: 'VALUATION', label: '🏢 78. Property Valuation', icon: Building, category: 'VALUATION' },
+    { id: 'EMI', label: '💳 Home Loan EMI', icon: Calculator, category: 'BUY' },
+    { id: 'TAX_SHIELD', label: '🛡️ Statutory Tax Shield', icon: Zap, category: 'TAX' },
+    { id: 'RENTAL_YIELD', label: '💵 Rental Yield', icon: Percent, category: 'RENT' },
   ];
 
   return (
@@ -175,8 +192,20 @@ export const CalculatorWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Interactive Calculation Body */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* RENDER DEDICATED FULL-WIDTH ENGINE SUITES */}
+      {activeTab === 'AI_INTELLIGENT_QUERY' ? (
+        <KiaanIntelligentQueryWidget />
+      ) : activeTab === 'PROPERTY_INVESTMENT' ? (
+        <PropertyInvestmentSuite initialPrice={propertyPrice} initialRent={monthlyRent} />
+      ) : activeTab === 'SCENARIO_SENSITIVITY' ? (
+        <ScenarioSensitivitySuite initialPrice={propertyPrice} initialRent={monthlyRent} />
+      ) : activeTab === 'DEVELOPMENT_FEASIBILITY' ? (
+        <DevelopmentFeasibilitySuite />
+      ) : activeTab === 'RESALE_TAXATION' ? (
+        <ResaleTaxationSuite />
+      ) : (
+        /* Main Interactive Calculation Body */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Inputs Controls Panel */}
         <div className="rounded-3xl bg-[#0D1525]/90 border border-white/10 p-6 space-y-5 shadow-xl">
           <div className="flex items-center justify-between pb-3 border-b border-white/10">
@@ -1085,6 +1114,7 @@ export const CalculatorWidget: React.FC = () => {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };

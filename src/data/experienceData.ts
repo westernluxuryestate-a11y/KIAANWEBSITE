@@ -988,6 +988,46 @@ export const SEED_GROUNDED_FAQS: GroundedFaqItem[] = [
     isAiAssistedGrounded: true,
     helpfulVotes: 47,
   },
+  {
+    id: 'faq_nri_1',
+    category: 'NRI_LEGAL',
+    question: 'How does an NRI purchase a property remotely without physical presence in India?',
+    groundedAnswer:
+      'Non-Resident Indians (NRIs) and OCIs can execute 100% compliant property acquisitions under FEMA guidelines through inward remittances via NRE / NRO bank accounts. Agreement for Sale registration is supported via digital e-registration or consular-attested Special Power of Attorney (PoA) handled by our senior legal desk.',
+    verifiedSourceReference: 'RBI FEMA Master Direction (Acquisition and Transfer of Immovable Property in India) & High Court PoA Framework',
+    isAiAssistedGrounded: true,
+    helpfulVotes: 82,
+  },
+  {
+    id: 'faq_finance_1',
+    category: 'FINANCE_ESCROW',
+    question: 'Which leading banks have pre-approved the projects, and where are buyer funds deposited?',
+    groundedAnswer:
+      'All developments hold Approved Project Finance (APF) approvals from HDFC Bank, State Bank of India (SBI), ICICI Bank, and Kotak Mahindra Bank. 70% of all customer funds are deposited directly into statutory MahaRERA project-specific escrow accounts, withdrawable only upon certified architect and engineer milestone completions.',
+    verifiedSourceReference: 'MahaRERA Section 4(2)(l)(D) Escrow Certification & Banking APF Letter Registry',
+    isAiAssistedGrounded: true,
+    helpfulVotes: 69,
+  },
+  {
+    id: 'faq_price_2',
+    category: 'PRICE',
+    question: 'What is the token booking amount, and is it 100% refundable if due diligence fails?',
+    groundedAnswer:
+      'The initial reservation token is ₹1,00,000 for luxury residences and ₹5,00,000 for penthouses. Under Kiaan’s 7-day Due Diligence Guarantee, tokens are 100% refundable with zero administrative deductions if the buyer finds any encumbrance or legal title discrepancy during document review.',
+    verifiedSourceReference: 'Kiaan Fair Escrow & Token Refund Charter (Clause 3.1)',
+    isAiAssistedGrounded: true,
+    helpfulVotes: 95,
+  },
+  {
+    id: 'faq_config_2',
+    category: 'CONFIGURATION',
+    question: 'Can luxury apartments be customized or purchased as a bare-shell layout?',
+    groundedAnswer:
+      'Yes. For select 4 BHK and sky duplex residences, buyers can opt for custom structural layout reconfiguration prior to the 12th-floor slab casting, or select a "Bare-Shell Bespoke" hand-over with credits adjusted against luxury Italian marble and sanitary fittings.',
+    verifiedSourceReference: 'Architectural Structural Modification Annexure & Custom Fit-Out Guidelines',
+    isAiAssistedGrounded: true,
+    helpfulVotes: 54,
+  },
 ];
 
 // ============================================================

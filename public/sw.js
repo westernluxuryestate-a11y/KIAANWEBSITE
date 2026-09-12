@@ -1,5 +1,5 @@
 // Kiaan Properties - Service Worker for Low-Network and Offline Resilience (Items 141 & 142)
-const CACHE_NAME = 'kiaan-cache-v1.4';
+const CACHE_NAME = 'kiaan-cache-v3.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -27,6 +27,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
+
+  // Never cache Vite internal scripts, development modules, hot updates, or node_modules
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/node_modules') ||
+    url.pathname.startsWith('/src') ||
+    url.pathname.includes('?v=') ||
+    url.pathname.includes('hot-update')
+  ) {
+    return;
+  }
 
   // Allow non-GET requests to pass through untouched
   if (request.method !== 'GET') {

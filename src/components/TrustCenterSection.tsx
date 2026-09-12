@@ -58,7 +58,12 @@ export const TrustCenterSection: React.FC<TrustCenterSectionProps> = ({
             </span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold">Kiaan Trust Center™</h2>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold">Kiaan Trust Center™</h2>
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              Agency MahaRERA No: A031262603640
+            </span>
+          </div>
 
           {/* ITEM 117: Real Timestamps */}
           <div className="flex flex-wrap items-center gap-4 text-xs font-mono opacity-80 pt-1">

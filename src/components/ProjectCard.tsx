@@ -4,8 +4,11 @@
  */
 
 import React from 'react';
+import { motion } from 'motion/react';
 import { Project } from '../types';
 import { ReraBadge } from './ReraBadge';
+import { SeoImage } from './SeoImage';
+import { seoEngine } from '../services/seoAndMetadataEngine';
 import {
   MapPin,
   Building,
@@ -16,7 +19,9 @@ import {
   ArrowRight,
   ShieldCheck,
   Compass,
+  HardHat,
 } from 'lucide-react';
+import { ConstructionProgressBar, getProjectConstructionProgress } from './ConstructionProgressBar';
 
 interface ProjectCardProps {
   project: Project;
@@ -24,6 +29,7 @@ interface ProjectCardProps {
   onOpenUnits: (project: Project) => void;
   onScheduleVisit: (project: Project) => void;
   onOpenDigitalTwin?: (project: Project) => void;
+  index?: number;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -32,27 +38,52 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   onOpenUnits,
   onScheduleVisit,
   onOpenDigitalTwin,
+  index = 0,
 }) => {
   const coverImage = project.media.find((m) => m.isCover)?.url || project.media[0]?.url;
+  const progressInfo = getProjectConstructionProgress(project);
 
   return (
-    <div
+    <motion.div
       id={`project-card-${project.id}`}
-      className="group rounded-3xl bg-[#0F141F] border border-white/10 hover:border-amber-500/40 transition-all duration-500 overflow-hidden shadow-2xl flex flex-col justify-between"
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{
+        duration: 0.65,
+        delay: Math.min(index * 0.08, 0.32),
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      whileHover={{ y: -6, transition: { duration: 0.3, ease: 'easeOut' } }}
+      className="group rounded-3xl bg-[#0F141F] border border-white/10 hover:border-amber-500/40 transition-colors duration-500 overflow-hidden shadow-2xl flex flex-col justify-between"
     >
       {/* Cover Image & Badges */}
       <div className="relative h-72 overflow-hidden">
-        <img
+        <SeoImage
           src={coverImage}
-          alt={project.name}
-          referrerPolicy="no-referrer"
+          alt={seoEngine.generateMediaAltText({
+            entityType: 'PROJECT',
+            entityTitle: project.name,
+            locality: project.location.microMarket || 'Pune',
+            city: project.location.city || 'Pune',
+            mediaCategory: 'EXTERIOR',
+            reraNumber: project.reraRecord?.registrationNumber,
+          })}
+          context={{
+            entityType: 'PROJECT',
+            entityTitle: project.name,
+            locality: project.location.microMarket || 'Pune',
+            city: project.location.city || 'Pune',
+            mediaCategory: 'EXTERIOR',
+            reraNumber: project.reraRecord?.registrationNumber,
+          }}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F141F] via-transparent to-black/40"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F141F] via-transparent to-black/40 pointer-events-none"></div>
 
         {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+          <div className="flex flex-wrap items-center gap-2">
             {project.isKiaanPick && (
               <span className="px-3 py-1 rounded-full bg-amber-500 text-black text-[10px] font-extrabold uppercase tracking-wider shadow-lg flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
@@ -61,6 +92,23 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             )}
             <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold uppercase tracking-wider">
               {project.status.replace('_', ' ')}
+            </span>
+            {/* Small 'Micro-market' indicator badge */}
+            <span className="px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md border border-amber-500/50 text-amber-300 text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-md">
+              <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Micro-market: <strong className="text-white font-extrabold">{project.location.microMarket}</strong></span>
+            </span>
+
+            {/* Construction Progress Indicator Badge */}
+            <span
+              className={`px-2.5 py-1 rounded-full backdrop-blur-md border text-[10px] font-bold tracking-wide flex items-center gap-1.5 shadow-md ${
+                progressInfo.isComplete
+                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                  : 'bg-black/75 border-amber-500/40 text-amber-300'
+              }`}
+            >
+              <HardHat className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Completion: <strong className="text-white font-mono font-bold">{progressInfo.percentage}%</strong></span>
             </span>
           </div>
 
@@ -71,16 +119,17 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
 
         {/* Bottom image overlay stats */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-          <div>
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium">
-              <MapPin className="w-3.5 h-3.5 text-amber-400" />
-              <span>{project.location.microMarket}, {project.location.city}</span>
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/25 backdrop-blur-md border border-amber-400/40 text-amber-300 text-[10px] font-bold tracking-wide shadow-sm">
+              <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>Micro-market: <strong className="text-white">{project.location.microMarket}</strong></span>
+              <span className="text-white/60 font-normal">· {project.location.city}</span>
             </div>
-            <h3 className="text-2xl font-serif font-bold text-white tracking-wide mt-0.5">{project.name}</h3>
+            <h3 className="text-2xl font-serif font-bold text-white tracking-wide">{project.name}</h3>
           </div>
 
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <div className="text-[10px] uppercase font-bold text-amber-400 tracking-wider">Price Range</div>
             <div className="text-xl font-serif font-bold text-white">{project.headlinePriceRange.displayString}</div>
           </div>
@@ -108,6 +157,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             <span className="text-xs font-bold text-amber-300 mt-0.5 block">{project.possessionDate}</span>
           </div>
         </div>
+
+        {/* Visual Completion Gauge Indicator */}
+        <ConstructionProgressBar project={project} />
 
         {/* MahaRERA Badge */}
         <ReraBadge reraRecord={project.reraRecord} compact />
@@ -164,6 +216,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

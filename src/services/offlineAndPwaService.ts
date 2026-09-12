@@ -47,6 +47,26 @@ export class OfflineAndPwaService {
    */
   public registerServiceWorker(): void {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      const isDev = Boolean((import.meta as any).env?.DEV || window.location.hostname === 'localhost' || window.location.hostname.includes('ais-dev'));
+      if (isDev) {
+        // In Vite development mode, unregister any active service worker to prevent cached module conflicts
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const reg of registrations) {
+            reg.unregister();
+          }
+        });
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            names.forEach((name) => {
+              if (name.includes('kiaan-cache')) {
+                caches.delete(name);
+              }
+            });
+          });
+        }
+        return;
+      }
+
       window.addEventListener('load', () => {
         navigator.serviceWorker
           .register('/sw.js')

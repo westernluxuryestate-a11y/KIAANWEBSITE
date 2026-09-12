@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 160" fill="none">
+  <defs>
+    <!-- Gold Metallic Gradients -->
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF2A3" />
+      <stop offset="35%" stop-color="#F5B731" />
+      <stop offset="70%" stop-color="#C98A16" />
+      <stop offset="100%" stop-color="#8A5807" />
+    </linearGradient>
+
+    <linearGradient id="g2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF9D2" />
+      <stop offset="40%" stop-color="#E6A825" />
+      <stop offset="80%" stop-color="#A06709" />
+      <stop offset="100%" stop-color="#5F3A02" />
+    </linearGradient>
+
+    <linearGradient id="gHigh" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#FBD36D" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#B3740A" stop-opacity="0.2" />
+    </linearGradient>
+
+    <!-- Deep Midnight Navy Gradients -->
+    <linearGradient id="navy1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E234A" />
+      <stop offset="50%" stop-color="#08142A" />
+      <stop offset="100%" stop-color="#020712" />
+    </linearGradient>
+
+    <linearGradient id="navy2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="70%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Left Monogram (K & Skyscraper) -->
+  <g filter="url(#shadow)">
+    <!-- Outer Gold Crescent Swoosh -->
+    <path d="M 28 85 C 28 42 62 14 98 12 C 78 22 52 46 50 85 C 48 118 72 138 90 146 C 54 142 28 120 28 85 Z" fill="url(#g1)" />
+
+    <!-- Left Tower Background Navy Facet -->
+    <polygon points="38,142 38,72 58,54 58,142" fill="url(#navy1)" />
+    <!-- Left Tower Golden Bevel -->
+    <polygon points="58,54 68,45 68,142 58,142" fill="url(#g2)" />
+    <!-- Windows / Vertical Lines in Tower -->
+    <line x1="45" y1="80" x2="45" y2="135" stroke="url(#g1)" stroke-width="1.5" stroke-opacity="0.7" />
+    <line x1="51" y1="72" x2="51" y2="135" stroke="url(#g1)" stroke-width="1.5" stroke-opacity="0.7" />
+
+    <!-- Center Tall Gold Skyscraper (Spire) -->
+    <polygon points="68,142 68,36 84,6 84,142" fill="url(#g1)" />
+    <!-- Tall Skyscraper Right Shadow Facet -->
+    <polygon points="84,6 94,22 94,142 84,142" fill="url(#g2)" />
+    <!-- Spire Highlight Edge -->
+    <line x1="84" y1="6" x2="84" y2="142" stroke="#FFF7C2" stroke-width="1.5" />
+
+    <!-- Deep Navy Tower Inside -->
+    <polygon points="94,62 108,76 108,142 94,142" fill="url(#navy2)" />
+
+    <!-- Stylized 'K' Upper Gold Arm -->
+    <polygon points="84,78 136,26 150,38 94,92" fill="url(#g1)" />
+    <polygon points="136,26 150,38 142,42 128,30" fill="url(#gHigh)" />
+
+    <!-- Stylized 'K' Lower Gold Arm -->
+    <polygon points="88,86 142,142 124,142 78,96" fill="url(#g2)" />
+    <polygon points="88,86 104,80 148,132 136,142" fill="url(#g1)" />
+
+    <!-- Base Tiered Pedestal -->
+    <polygon points="22,142 152,142 144,148 30,148" fill="url(#g2)" />
+    <polygon points="18,148 156,148 148,153 26,153" fill="url(#g1)" />
+  </g>
+
+  <!-- Typography: KIAAN -->
+  <g filter="url(#shadow)">
+    <!-- Letter K -->
+    <path d="M 180 32 L 202 32 L 202 70 L 228 32 L 254 32 L 218 78 L 258 126 L 232 126 L 202 86 L 202 126 L 180 126 Z" fill="#0C2340" stroke="url(#g1)" stroke-width="1.5" />
+    
+    <!-- Letter I -->
+    <path d="M 268 32 L 288 32 L 288 126 L 268 126 Z" fill="#0C2340" stroke="url(#g1)" stroke-width="1.5" />
+
+    <!-- Letter A 1 -->
+    <path d="M 324 32 L 344 32 L 372 126 L 350 126 L 344 104 L 324 104 L 318 126 L 296 126 Z M 328 88 L 340 88 L 334 60 Z" fill="#0C2340" stroke="url(#g1)" stroke-width="1.5" />
+
+    <!-- Letter A 2 -->
+    <path d="M 404 32 L 424 32 L 452 126 L 430 126 L 424 104 L 404 104 L 398 126 L 376 126 Z M 408 88 L 420 88 L 414 60 Z" fill="#0C2340" stroke="url(#g1)" stroke-width="1.5" />
+
+    <!-- Letter N -->
+    <path d="M 464 32 L 484 32 L 508 88 L 508 32 L 526 32 L 526 126 L 506 126 L 482 70 L 482 126 L 464 126 Z" fill="#0C2340" stroke="url(#g1)" stroke-width="1.5" />
+  </g>
+
+  <!-- Typography: PROPERTIES with Gold Horizontal Lines -->
+  <!-- Left Wing Line -->
+  <line x1="180" y1="148" x2="236" y2="148" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" />
+  
+  <!-- Text PROPERTIES -->
+  <text x="354" y="153" font-family="'Cinzel', 'Times New Roman', serif" font-size="16" font-weight="bold" letter-spacing="9" fill="url(#g1)" text-anchor="middle">PROPERTIES</text>
+  
+  <!-- Right Wing Line -->
+  <line x1="472" y1="148" x2="526" y2="148" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" />
+</svg>

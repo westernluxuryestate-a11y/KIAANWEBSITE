@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Project, Unit } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Project, Unit, UserSession } from '../types';
 import {
   Building2,
   Layers,
@@ -34,8 +34,13 @@ import {
   HardHat,
   BadgeCheck,
   Check,
+  Edit3,
+  Trash2,
+  UserCheck,
 } from 'lucide-react';
 import { formatINR, calculateHomeLoanEMI, calculateStatutoryTaxShield } from '../services/calculatorEngine';
+import { seoEngine } from '../services/seoAndMetadataEngine';
+import { SeoImage } from './SeoImage';
 import { ReraBadge } from './ReraBadge';
 import { SiteVisitModal } from './SiteVisitModal';
 import { MakeOfferModal } from './MakeOfferModal';
@@ -44,40 +49,116 @@ import { BeforeYouBookModal } from './BeforeYouBookModal';
 import { TrustCenterSection } from './TrustCenterSection';
 import { CustomerReviewsSection } from './CustomerReviewsSection';
 import { GroundedFaqEngine } from './GroundedFaqEngine';
+import { PropertyProjectEditorModal } from './PropertyProjectEditorModal';
+import { ProjectRoadmapTimeline } from './ProjectRoadmapTimeline';
+import { TokenCheckoutModal } from './TokenCheckoutModal';
+import { VipGatedDataModal } from './VipGatedDataModal';
+import { globalKiaanStore } from '../services/store';
 
 interface ProjectExperiencePageProps {
   project: Project;
+  session?: UserSession | null;
   theme?: 'dark' | 'light';
   onBackToDiscovery: () => void;
   onSelectUnitForExperience: (unit: Unit) => void;
   onOpenDigitalTwin: (project: Project, unitId?: string) => void;
   onAddToComparison: (unit: Unit) => void;
+  onProjectUpdated?: (proj: Project) => void;
 }
 
 export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
-  project,
+  project: initialProject,
+  session,
   theme = 'dark',
   onBackToDiscovery,
   onSelectUnitForExperience,
   onOpenDigitalTwin,
   onAddToComparison,
+  onProjectUpdated,
 }) => {
   const isDark = theme === 'dark';
+  const [project, setProject] = useState<Project>(initialProject);
 
   // Sticky Navigation Section State
   const [activeNav, setActiveNav] = useState<
-    'overview' | 'gallery' | 'towers' | 'plans' | 'inventory' | 'amenities' | 'location' | 'price' | 'rera'
+    'overview' | 'gallery' | 'towers' | 'plans' | 'inventory' | 'roadmap' | 'amenities' | 'location' | 'price' | 'rera'
   >('overview');
 
   // Filter for Live Inventory Explorer
   const [selectedTowerId, setSelectedTowerId] = useState<string>(project.towers?.[0]?.id || 'all');
   const [selectedConfigFilter, setSelectedConfigFilter] = useState<string>('ALL');
 
+  // Automated SEO & Schema.org ImageObject Injection for Project
+  useEffect(() => {
+    if (project) {
+      const seoPayload = seoEngine.getProjectSeo(project);
+      seoEngine.applyToDocument(seoPayload);
+      seoEngine.injectMediaSeoMetadata({
+        images: (project.media || []).map((m) => ({
+          url: m.url,
+          title: m.title,
+          caption: m.caption,
+          category: m.category,
+          isCover: m.isCover,
+        })),
+        context: {
+          entityType: 'PROJECT',
+          entityTitle: project.name,
+          locality: project.location?.microMarket || 'Pune',
+          city: project.location?.city || 'Pune',
+          reraNumber: project.reraRecord?.registrationNumber,
+        },
+      });
+    }
+  }, [project]);
+
   // Modals State
   const [showVisitModal, setShowVisitModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showBeforeYouBookModal, setShowBeforeYouBookModal] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
+
+  // Requirement: Important data should be shown only after taking contact details
+  const [isContactUnlocked, setIsContactUnlocked] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kiaan_contact_verified') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [showGatedModal, setShowGatedModal] = useState(false);
+  const [gatedTargetName, setGatedTargetName] = useState('Itemized Cost Sheet & Floor Plans');
+
+  // Requirement: Lock 15 minutes exclusively tab once clicked it should direct to payment page
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedUnitForLock, setSelectedUnitForLock] = useState<Unit | null>(null);
+  const [lockSuccessMsg, setLockSuccessMsg] = useState<string | null>(null);
+
+  const handleOpenLockPayment = (unit?: Unit | null) => {
+    setSelectedUnitForLock(unit || allUnits[0] || null);
+    setShowPaymentModal(true);
+  };
+
+  const canModify = globalKiaanStore.canUserModifyProject(project, session);
+  const isCreator = project.createdBy?.email?.toLowerCase() === (session?.email || '').toLowerCase();
+
+  const handleDeleteProject = () => {
+    if (!canModify) {
+      alert('Access Denied: Only the creator or Super Admin can delete this project.');
+      return;
+    }
+    const confirmDel = window.confirm(`Are you sure you want to delete project "${project.name}"?`);
+    if (!confirmDel) return;
+
+    const res = globalKiaanStore.deleteProject(project.id, session || undefined);
+    if (res.success) {
+      alert(`Project "${project.name}" has been deleted.`);
+      onBackToDiscovery();
+    } else {
+      alert(res.message);
+    }
+  };
   const [activeVideoModal, setActiveVideoModal] = useState(false);
 
   // Flatten units
@@ -164,6 +245,7 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
               { id: 'sec-towers', label: 'Towers', key: 'towers' },
               { id: 'sec-plans', label: 'Plans', key: 'plans' },
               { id: 'sec-inventory', label: 'Inventory', key: 'inventory' },
+              { id: 'sec-roadmap', label: 'Roadmap', key: 'roadmap' },
               { id: 'sec-amenities', label: 'Amenities', key: 'amenities' },
               { id: 'sec-location', label: 'Location', key: 'location' },
               { id: 'sec-price', label: 'Price', key: 'price' },
@@ -187,6 +269,26 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
 
           {/* Header Action CTAs */}
           <div className="flex items-center gap-2">
+            {canModify && (
+              <div className="flex items-center gap-1.5 mr-2">
+                <button
+                  onClick={() => setShowEditor(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition-all hover:scale-105"
+                  title="Modify Master Project"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Modify Project</span>
+                </button>
+                <button
+                  onClick={handleDeleteProject}
+                  className="p-2 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                  title="Delete Master Project"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => setShowShareModal(true)}
               className={`p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -207,6 +309,26 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
         </div>
       </header>
 
+      {/* AUTHOR & CREATOR OWNERSHIP BANNER */}
+      {project.createdBy && (
+        <div className={`px-4 sm:px-8 py-2 border-b text-xs flex items-center justify-between ${
+          isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-900'
+        }`}>
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span>
+              Development Registered By: <strong>{isCreator ? 'You' : project.createdBy.name || project.createdBy.email}</strong>
+              {project.createdBy.email && ` (${project.createdBy.email})`}
+            </span>
+          </div>
+          {canModify && (
+            <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400">
+              Full Project Authority
+            </span>
+          )}
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 3. MAIN PROJECT BODY CONTAINER                                            */}
       {/* ========================================================================= */}
@@ -216,15 +338,31 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
         {/* ========================================================================= */}
         <section id="sec-overview" className="space-y-6">
           <div className="relative rounded-3xl overflow-hidden border border-current/10 aspect-[16/9] lg:aspect-[21/9] bg-black group shadow-2xl">
-            <img
+            <SeoImage
               src={project.media?.[0]?.url || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=85'}
-              alt={project.name}
-              referrerPolicy="no-referrer"
+              alt={seoEngine.generateMediaAltText({
+                entityType: 'PROJECT',
+                entityTitle: project.name,
+                locality: project.location?.microMarket || 'Pune',
+                city: project.location?.city || 'Pune',
+                mediaCategory: 'EXTERIOR',
+                reraNumber: project.reraRecord?.registrationNumber,
+              })}
+              context={{
+                entityType: 'PROJECT',
+                entityTitle: project.name,
+                locality: project.location?.microMarket || 'Pune',
+                city: project.location?.city || 'Pune',
+                mediaCategory: 'EXTERIOR',
+                reraNumber: project.reraRecord?.registrationNumber,
+              }}
+              priority={true}
+              showSeoBadge={true}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none"></div>
 
-            <div className="absolute top-6 left-6 flex flex-wrap items-center gap-2">
+            <div className="absolute top-6 left-6 flex flex-wrap items-center gap-2 pointer-events-none">
               <span className="px-3.5 py-1.5 rounded-full bg-amber-500 text-black text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5" />
                 <span>{project.projectType.replace('_', ' ')}</span>
@@ -235,11 +373,31 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
               </span>
             </div>
 
-            <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pointer-events-none">
               <div className="space-y-2 max-w-2xl">
-                <span className="text-xs uppercase font-bold tracking-widest text-amber-400">
-                  By {project.developerName}
-                </span>
+                {(() => {
+                  const dev = project.developerId
+                    ? globalKiaanStore.getDeveloperById(project.developerId)
+                    : globalKiaanStore.getDevelopers().find(
+                        (d) => d.name.toLowerCase() === (project.developerName || '').toLowerCase()
+                      );
+                  const devSlug = dev?.slug || dev?.id;
+                  return devSlug ? (
+                    <a
+                      href={`#developer/${devSlug}`}
+                      className="inline-flex items-center gap-1.5 text-xs uppercase font-bold tracking-widest text-amber-400 hover:text-amber-300 hover:underline pointer-events-auto bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-amber-400/30"
+                      title={`View ${project.developerName} developer dossier & projects`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>By {project.developerName}</span>
+                      <span className="text-[10px] text-amber-300 font-mono">→</span>
+                    </a>
+                  ) : (
+                    <span className="text-xs uppercase font-bold tracking-widest text-amber-400">
+                      By {project.developerName}
+                    </span>
+                  );
+                })()}
                 <h1 className="text-3xl sm:text-5xl font-serif font-bold text-white leading-tight">
                   {project.name}
                 </h1>
@@ -346,17 +504,34 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
                 }`}
               >
                 <div className="relative aspect-[16/10] overflow-hidden">
-                  <img
+                  <SeoImage
                     src={m.url}
-                    alt={m.title}
-                    referrerPolicy="no-referrer"
+                    alt={m.altText || seoEngine.generateMediaAltText({
+                      entityType: 'PROJECT',
+                      entityTitle: project.name,
+                      locality: project.location?.microMarket || 'Pune',
+                      city: project.location?.city || 'Pune',
+                      mediaCategory: m.category,
+                      reraNumber: project.reraRecord?.registrationNumber,
+                      customCaption: m.caption,
+                    })}
+                    context={{
+                      entityType: 'PROJECT',
+                      entityTitle: project.name,
+                      locality: project.location?.microMarket || 'Pune',
+                      city: project.location?.city || 'Pune',
+                      mediaCategory: m.category,
+                      reraNumber: project.reraRecord?.registrationNumber,
+                      customCaption: m.caption,
+                    }}
+                    showSeoBadge={true}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-400 border border-white/10">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-400 border border-white/10 pointer-events-none">
                     {m.category}
                   </span>
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                  <div className="absolute bottom-3 left-3 right-3 text-white pointer-events-none">
                     <p className="font-bold text-xs">{m.title}</p>
                     <p className="text-[10px] opacity-75">{m.caption || 'Verified Architectural Render'}</p>
                   </div>
@@ -514,6 +689,17 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
                       + Compare
                     </button>
                   </div>
+
+                  {/* Lock 15 Minutes Exclusively -> Directs to Payment Page */}
+                  <button
+                    onClick={() => handleOpenLockPayment(u)}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-500/10 hover:from-amber-500/30 hover:to-amber-500/20 border border-amber-500/40 text-amber-400 hover:text-amber-300 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                    title="Directly proceed to statutory escrow checkout to lock this unit for 15 minutes exclusively"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Lock 15 Minutes Exclusively</span>
+                    <ArrowRight className="w-3 h-3 text-amber-400" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -521,51 +707,115 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION: FLOOR PLANS & SPECIFICATIONS                                     */}
+        {/* SECTION: FLOOR PLANS & SPECIFICATIONS (Requirement: Contact Details Gated) */}
         {/* ========================================================================= */}
         <section id="sec-plans" className="space-y-6">
-          <div className="border-b pb-4 border-current/10">
-            <span className="text-xs uppercase font-bold tracking-widest text-amber-500">Engineered Dimensions</span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-current mt-1">Floor Plans & Architectural Specifications</h2>
+          <div className="border-b pb-4 border-current/10 flex items-center justify-between">
+            <div>
+              <span className="text-xs uppercase font-bold tracking-widest text-amber-500">Engineered Dimensions</span>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-current mt-1">Floor Plans & Architectural Specifications</h2>
+            </div>
+            {!isContactUnlocked ? (
+              <button
+                onClick={() => {
+                  setGatedTargetName('Architectural Floor Plans & Dimensioned CAD Blueprints');
+                  setShowGatedModal(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-2 cursor-pointer hover:bg-amber-500/25 transition-all"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Unlock Full Blueprints</span>
+              </button>
+            ) : (
+              <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5 font-mono">
+                <Check className="w-3.5 h-3.5" />
+                <span>Unlocked & Verified Access</span>
+              </span>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className={`p-6 sm:p-8 rounded-3xl border space-y-4 ${isDark ? 'bg-[#0B101B] border-white/10' : 'bg-white border-slate-200 shadow-md'}`}>
-              <h3 className="font-serif font-bold text-lg text-current">Key Finishes & Materials</h3>
-              <div className="space-y-3 text-xs">
-                {project.specifications?.map((spec, idx) => (
-                  <div key={idx} className="space-y-1">
-                    <span className="font-bold text-amber-500 uppercase text-[10px] tracking-wider">{spec.category}</span>
-                    <ul className="list-disc list-inside opacity-75 space-y-0.5">
-                      {spec.items.map((it, i) => (
-                        <li key={i}>{it}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+          {!isContactUnlocked ? (
+            <div className={`p-8 rounded-3xl border text-center space-y-4 ${isDark ? 'bg-[#0B101B] border-amber-500/20' : 'bg-amber-50/50 border-amber-200'}`}>
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-400 mx-auto flex items-center justify-center border border-amber-500/30">
+                <Lock className="w-6 h-6" />
               </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-lg font-serif font-bold text-current">Confidential Architectural Plans & Cost Sheets</h3>
+                <p className="text-xs opacity-75 leading-relaxed">
+                  High-resolution CAD blueprints, deck dimensions, and unit structural plans are reserved for verified luxury buyers. Please share your contact details to unlock immediate instant access.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setGatedTargetName('Architectural Floor Plans & Dimensioned CAD Blueprints');
+                  setShowGatedModal(true);
+                }}
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs cursor-pointer shadow-lg shadow-amber-500/20 inline-flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Enter Contact Details to Unlock Plans</span>
+              </button>
             </div>
-
-            <div className={`p-6 sm:p-8 rounded-3xl border space-y-4 ${isDark ? 'bg-[#0B101B] border-white/10' : 'bg-white border-slate-200 shadow-md'}`}>
-              <h3 className="font-serif font-bold text-lg text-current">Floor Plan Blueprints</h3>
-              <div className="space-y-3">
-                {allUnits.slice(0, 3).map((u) => (
-                  <div key={u.id} className="p-3.5 rounded-2xl border border-current/10 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-xs">{u.configuration} (Carpet: {u.carpetAreaSqFt} sq.ft)</h4>
-                      <p className="text-[11px] opacity-60">Deck: 120 sq.ft • 11.5 Ft Ceiling</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className={`p-6 sm:p-8 rounded-3xl border space-y-4 ${isDark ? 'bg-[#0B101B] border-white/10' : 'bg-white border-slate-200 shadow-md'}`}>
+                <h3 className="font-serif font-bold text-lg text-current">Key Finishes & Materials</h3>
+                <div className="space-y-3 text-xs">
+                  {project.specifications?.map((spec, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <span className="font-bold text-amber-500 uppercase text-[10px] tracking-wider">{spec.category}</span>
+                      <ul className="list-disc list-inside opacity-75 space-y-0.5">
+                        {spec.items.map((it, i) => (
+                          <li key={i}>{it}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <button
-                      onClick={() => onSelectUnitForExperience(u)}
-                      className="text-xs font-bold text-amber-500 hover:underline cursor-pointer"
-                    >
-                      Inspect Blueprint
-                    </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              <div className={`p-6 sm:p-8 rounded-3xl border space-y-4 ${isDark ? 'bg-[#0B101B] border-white/10' : 'bg-white border-slate-200 shadow-md'}`}>
+                <h3 className="font-serif font-bold text-lg text-current">Floor Plan Blueprints</h3>
+                <div className="space-y-3">
+                  {allUnits.slice(0, 4).map((u) => (
+                    <div key={u.id} className="p-3.5 rounded-2xl border border-current/10 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-xs">{u.configuration} (Carpet: {u.carpetAreaSqFt} sq.ft)</h4>
+                        <p className="text-[11px] opacity-60">Deck: 120 sq.ft • 11.5 Ft Ceiling • Level {u.floorNumber}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onSelectUnitForExperience(u)}
+                          className="text-xs font-bold text-amber-500 hover:underline cursor-pointer"
+                        >
+                          Inspect Blueprint
+                        </button>
+                        <button
+                          onClick={() => handleOpenLockPayment(u)}
+                          className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                          title="Lock 15 min exclusivity"
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>Lock Unit</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION: ROADMAP & CONSTRUCTION PROGRESS TIMELINE                          */}
+        {/* ========================================================================= */}
+        <section id="sec-roadmap">
+          <ProjectRoadmapTimeline
+            project={project}
+            theme={theme}
+            onOpenUnitExplorer={() => scrollToSection('sec-inventory', 'inventory')}
+          />
         </section>
 
         {/* ========================================================================= */}
@@ -645,6 +895,22 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
               <p className="text-xs opacity-75">
                 Standard baseline pricing includes base rate, covered car park allocation, and club lifetime membership.
               </p>
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    if (!isContactUnlocked) {
+                      setGatedTargetName('Itemized MahaRERA Cost Sheet & Tax Breakdown');
+                      setShowGatedModal(true);
+                    } else {
+                      alert('Itemized MahaRERA Cost Sheet (Breakup): Base Cost + 7% Stamp Duty + ₹30,000 Registration + 5% GST + Infra Charges unbundled successfully.');
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-current/5 hover:bg-current/10 border border-current/10 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                >
+                  {!isContactUnlocked ? <Lock className="w-3.5 h-3.5 text-amber-400" /> : <Download className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{!isContactUnlocked ? 'Unlock Itemized Cost Sheet' : 'Download Itemized Cost Sheet'}</span>
+                </button>
+              </div>
             </div>
 
             <div className={`p-6 sm:p-8 rounded-3xl border space-y-4 ${isDark ? 'bg-[#0B101B] border-white/10' : 'bg-white border-slate-200 shadow-md'}`}>
@@ -751,29 +1017,92 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Requirement: Lock 15 minutes exclusively tab once clicked it should direct to payment page */}
+            <button
+              onClick={() => handleOpenLockPayment()}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-black font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-500/25 transition-all hover:scale-105"
+              title="Lock 15 Minutes Exclusively - Direct Escrow Payment"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span>Lock 15-Min Exclusively</span>
+            </button>
+
             <button
               onClick={() => setShowBeforeYouBookModal(true)}
               className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 cursor-pointer ${isDark ? 'border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'}`}
               title="Statutory Checklist & Pre-Reservation Audit"
             >
               <ShieldCheck className="w-4 h-4 text-amber-500" />
-              <span>Before You Book</span>
+              <span className="hidden sm:inline">Before You Book</span>
             </button>
             <button
               onClick={() => setShowVisitModal(true)}
-              className={`px-4 py-2.5 rounded-xl border text-xs font-bold cursor-pointer ${isDark ? 'border-white/15 bg-white/5 hover:bg-white/10 text-white' : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-800'}`}
+              className={`px-3.5 py-2.5 rounded-xl border text-xs font-bold cursor-pointer ${isDark ? 'border-white/15 bg-white/5 hover:bg-white/10 text-white' : 'border-slate-200 bg-slate-100 hover:bg-slate-200 text-slate-800'}`}
             >
               Book Visit
             </button>
             <button
               onClick={() => setShowOfferModal(true)}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-bold text-xs cursor-pointer shadow-lg shadow-amber-500/25"
+              className="px-4 py-2.5 rounded-xl bg-current/10 hover:bg-current/15 border border-current/15 text-current font-bold text-xs cursor-pointer"
             >
               Submit Offer
             </button>
           </div>
         </div>
       </div>
+
+      {/* Lock Success Alert Notification */}
+      {lockSuccessMsg && (
+        <div className="fixed top-20 right-4 z-50 p-4 rounded-2xl bg-emerald-600 text-white shadow-2xl flex items-center gap-3 border border-emerald-400 max-w-md animate-in slide-in-from-top-4">
+          <Check className="w-5 h-5 flex-shrink-0 text-emerald-200" />
+          <div className="text-xs">
+            <span className="font-bold block">15-Minute Exclusivity Locked!</span>
+            <span>{lockSuccessMsg}</span>
+          </div>
+          <button
+            onClick={() => setLockSuccessMsg(null)}
+            className="p-1 rounded hover:bg-white/20 ml-auto cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Requirement: Important data should be shown only after taking contact details */}
+      <VipGatedDataModal
+        isOpen={showGatedModal}
+        onClose={() => setShowGatedModal(false)}
+        projectName={project.name}
+        targetDataName={gatedTargetName}
+        theme={theme}
+        onUnlockSuccess={(lead) => {
+          setIsContactUnlocked(true);
+          try {
+            localStorage.setItem('kiaan_contact_verified', 'true');
+          } catch {
+            // ignore
+          }
+          setShowGatedModal(false);
+          alert(`Access granted for ${lead.name}! You can now inspect full CAD blueprints, itemized cost sheets, and official filings.`);
+        }}
+      />
+
+      {/* Requirement: Lock 15 minutes exclusively tab once clicked it should direct to payment page */}
+      {showPaymentModal && (
+        <TokenCheckoutModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          projectName={project.name}
+          reraNumber={project.reraRecord?.registrationNumber}
+          unitId={selectedUnitForLock?.id}
+          unitConfiguration={selectedUnitForLock?.configuration || project.configurations?.[0] || 'Luxury Residence'}
+          theme={theme}
+          onPaymentSuccess={(receipt) => {
+            setShowPaymentModal(false);
+            setLockSuccessMsg(`Receipt: ${receipt.paymentReference}. Unit locked until ${new Date(receipt.expiresAt).toLocaleTimeString()} exclusively for you.`);
+          }}
+        />
+      )}
 
       {/* Modals */}
       {showVisitModal && <SiteVisitModal project={project} onClose={() => setShowVisitModal(false)} />}
@@ -785,10 +1114,27 @@ export const ProjectExperiencePage: React.FC<ProjectExperiencePageProps> = ({
           onClose={() => setShowBeforeYouBookModal(false)}
           onProceedToReservation={() => {
             setShowBeforeYouBookModal(false);
-            setShowOfferModal(true);
+            handleOpenLockPayment();
           }}
           project={project}
           theme={theme}
+        />
+      )}
+
+      {showEditor && (
+        <PropertyProjectEditorModal
+          isOpen={showEditor}
+          onClose={() => setShowEditor(false)}
+          mode="EDIT_PROJECT"
+          initialProject={project}
+          session={session}
+          theme={theme}
+          onSuccess={(updatedProj) => {
+            if (updatedProj) {
+              setProject(updatedProj);
+              if (onProjectUpdated) onProjectUpdated(updatedProj);
+            }
+          }}
         />
       )}
     </div>

@@ -15,13 +15,20 @@ import {
   MapPin,
   Camera,
   Trash2,
+  MessageSquare,
+  ArrowRight,
 } from 'lucide-react';
 import { analyzePhotoQuality, PhotoQualityAnalysisResult } from '../services/calculatorEngine';
+import { Amenity } from '../types';
+import { MASTER_AMENITIES } from '../data/seedData';
+import { AmenitySelector } from './AmenitySelector';
 
 interface SellPropertyModalProps {
   isOpen: boolean;
   onClose: () => void;
   theme?: 'dark' | 'light';
+  onOpenWhatsAppOnboarding?: (mode?: 'PROPERTY' | 'PROJECT') => void;
+  onOpenUniversalListingForm?: () => void;
 }
 
 interface UploadedPhoto {
@@ -30,7 +37,13 @@ interface UploadedPhoto {
   url: string;
 }
 
-export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({ isOpen, onClose, theme = 'dark' }) => {
+export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({
+  isOpen,
+  onClose,
+  theme = 'dark',
+  onOpenWhatsAppOnboarding,
+  onOpenUniversalListingForm,
+}) => {
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [submitted, setSubmitted] = useState(false);
   const isDark = theme === 'dark';
@@ -55,6 +68,10 @@ export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({ isOpen, on
     hasRera: 'YES',
     wants3DScan: true,
   });
+
+  const [selectedAmenities, setSelectedAmenities] = useState<Amenity[]>(
+    MASTER_AMENITIES.slice(0, 4)
+  );
 
   const [photos, setPhotos] = useState<UploadedPhoto[]>([
     {
@@ -123,6 +140,26 @@ export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({ isOpen, on
           </button>
         </div>
 
+        {/* Universal Listing Form CTA for Non-Residential / Advanced Schemas */}
+        {onOpenUniversalListingForm && !submitted && (
+          <div className="px-6 py-2 bg-gradient-to-r from-amber-500/20 via-emerald-500/10 to-transparent border-b border-amber-500/30 flex items-center justify-between text-xs">
+            <span className="text-amber-300 font-medium">
+              🏢 Need to list <strong>Commercial, Pre-Leased Offices, Land & Plots, or Industrial</strong>?
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenUniversalListingForm();
+              }}
+              className="px-3 py-1 rounded-lg bg-amber-500 text-black font-bold text-[11px] hover:bg-amber-400 transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>Universal Listing Suite</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         {/* Step Progression Bar */}
         {!submitted && (
           <div className="px-6 py-2.5 bg-black/20 border-b border-white/5 flex items-center justify-between text-xs">
@@ -189,6 +226,56 @@ export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({ isOpen, on
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5 text-xs">
+              {/* WhatsApp Fast-Track Onboarding Alternative */}
+              <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                    <MessageSquare className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <span className="font-serif font-bold text-emerald-400 block text-xs flex items-center gap-1.5">
+                      <span>Fast-Track: Onboard via WhatsApp Assistant (+91 77966 55556)</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    </span>
+                    <span className="text-[11px] opacity-75 block">
+                      Send photos, voice note, or text to +91 77966 55556. AI auto-formats pricing, area, and MahaRERA audit.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenWhatsAppOnboarding) {
+                        onOpenWhatsAppOnboarding('PROPERTY');
+                      } else {
+                        window.open('https://wa.me/917796655556?text=Hi%20Kiaan%2C%20I%20want%20to%20list%20my%20property.', '_blank');
+                      }
+                    }}
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+                  >
+                    <span>List on WhatsApp</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onOpenWhatsAppOnboarding) {
+                        onOpenWhatsAppOnboarding('PROJECT');
+                      } else {
+                        window.open('https://wa.me/917796655556?text=Hi%20Kiaan%2C%20I%20want%20to%20onboard%20a%20developer%20project.', '_blank');
+                      }
+                    }}
+                    className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-current text-xs font-semibold transition-all cursor-pointer"
+                    title="Developer master project"
+                  >
+                    Master Project
+                  </button>
+                </div>
+              </div>
+
               {/* STEP 1: ASSET & LOCATION */}
               {activeStep === 1 && (
                 <div className="space-y-4 animate-fade-in">
@@ -303,6 +390,14 @@ export const SellPropertyModal: React.FC<SellPropertyModalProps> = ({ isOpen, on
                       </select>
                     </div>
                   </div>
+
+                  {/* Amenities Selection (By Tick or Manual) */}
+                  <AmenitySelector
+                    title="Included Amenities & Luxury Specifications"
+                    selectedAmenities={selectedAmenities}
+                    onChange={setSelectedAmenities}
+                    theme={theme}
+                  />
 
                   <div className="flex justify-end pt-2">
                     <button

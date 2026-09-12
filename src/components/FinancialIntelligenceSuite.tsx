@@ -20,10 +20,12 @@ import {
   Calculator,
   CheckCircle2,
   Info,
+  Building2,
 } from 'lucide-react';
+import { PropertyInvestmentSuite } from './PropertyInvestmentSuite';
 
 export function FinancialIntelligenceSuite() {
-  const [activeSubTab, setActiveSubTab] = useState<'BANK_COMPARATOR' | 'TAX_SHIELD' | 'APPRECIATION' | 'LEVERAGE'>('TAX_SHIELD');
+  const [activeSubTab, setActiveSubTab] = useState<'INVESTMENT_SUITE' | 'BANK_COMPARATOR' | 'TAX_SHIELD' | 'APPRECIATION' | 'LEVERAGE'>('INVESTMENT_SUITE');
 
   // Input states
   const [propertyPrice, setPropertyPrice] = useState<number>(18500000); // ₹1.85 Cr
@@ -170,6 +172,7 @@ export function FinancialIntelligenceSuite() {
       {/* Sub-Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
         {[
+          { id: 'INVESTMENT_SUITE', label: 'Property Investment & 17 Calculators', icon: Building2 },
           { id: 'TAX_SHIELD', label: 'Statutory Tax Shield (80C & 24b)', icon: ShieldCheck },
           { id: 'BANK_COMPARATOR', label: 'Bank Benchmark Rates', icon: Landmark },
           { id: 'APPRECIATION', label: '5-Year Wealth & Rental Forecast', icon: TrendingUp },
@@ -193,6 +196,13 @@ export function FinancialIntelligenceSuite() {
           );
         })}
       </div>
+
+      {/* TAB 0: PROPERTY INVESTMENT & 17 CALCULATORS SUITE */}
+      {activeSubTab === 'INVESTMENT_SUITE' && (
+        <div className="space-y-6 animate-fade-in">
+          <PropertyInvestmentSuite initialPrice={propertyPrice} />
+        </div>
+      )}
 
       {/* TAB 1: STATUTORY TAX SHIELD (SECTION 80C & 24B) */}
       {activeSubTab === 'TAX_SHIELD' && taxResult && (

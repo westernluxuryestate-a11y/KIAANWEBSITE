@@ -321,7 +321,7 @@ export const NriExperienceModal: React.FC<NriExperienceModalProps> = ({
                   <button
                     onClick={() => {
                       alert('Connecting you to Kiaan NRI Private Wealth Concierge on WhatsApp...');
-                      window.open('https://api.whatsapp.com/send?text=Hello%20Kiaan%20Estates,%20I%20would%20like%20to%20schedule%20a%20VIP%20NRI%20Virtual%20Tour.', '_blank');
+                      window.open('https://api.whatsapp.com/send?text=Hello%20Kiaan%20Properties,%20I%20would%20like%20to%20schedule%20a%20VIP%20NRI%20Virtual%20Tour.', '_blank');
                     }}
                     className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-500/25 transition-all cursor-pointer"
                   >
